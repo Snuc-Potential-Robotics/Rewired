@@ -196,6 +196,33 @@
   animation: signal-blink 1.6s steps(1, end) infinite;
 }
 
+/* Alert-dialog enter/exit. Defined here rather than pulling in an animation
+   plugin for two transitions. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+}
+
+.animate-overlay-in { animation: overlay-in 150ms ease-out; }
+.animate-overlay-out { animation: overlay-out 120ms ease-in; }
+.animate-dialog-in { animation: dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-dialog-out { animation: dialog-out 120ms ease-in; }
+
 /* Logic-analyzer sweep across the locked panels. */
 @keyframes sweep {
   0% { transform: translateX(-100%); }

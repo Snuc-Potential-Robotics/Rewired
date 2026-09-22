@@ -32,6 +32,7 @@ import {
   FileKey
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import Link from "next/link";
 
 interface AdminContestState {
@@ -109,6 +110,13 @@ export default function AdminPage() {
   // Submissions and Teams
   const [submissions, setSubmissions] = useState<SubmissionLog[]>([]);
   const [teams, setTeams] = useState<TeamOverview[]>([]);
+
+  // Confirmation dialogs. Each destructive organiser action opens one of
+  // these instead of a native window.confirm.
+  const [deleteTarget, setDeleteTarget] = useState<AdminQuestion | null>(null);
+  const [endConfirmOpen, setEndConfirmOpen] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetClearsScores, setResetClearsScores] = useState(false);
 
   // 1. Verify Admin Session
   const checkAdminAuth = useCallback(async () => {
@@ -306,10 +314,6 @@ export default function AdminPage() {
 
   // Delete Question
   const handleDeleteQuestion = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this challenge? This will remove all associated submissions.")) {
-      return;
-    }
-
     try {
       const res = await fetch(`/api/questions?id=${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -542,11 +546,7 @@ export default function AdminPage() {
                   +5 Minutes
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm("End the CTF now? Submissions will be locked.")) {
-                      handleContestAction("end");
-                    }
-                  }}
+                  onClick={() => setEndConfirmOpen(true)}
                   className="px-4 py-2.5 rounded-xl bg-destructive/15 hover:bg-destructive/25 text-destructive border border-destructive/30 font-semibold text-xs flex items-center gap-2 transition-colors"
                 >
                   <ShieldAlert className="w-4 h-4" />
@@ -589,10 +589,8 @@ export default function AdminPage() {
             <div className="ml-auto">
               <button
                 onClick={() => {
-                  const clear = confirm("Reset CTF to PENDING?\n\nClick OK to also CLEAR all team submissions and reset scores.\nClick Cancel to abort.");
-                  if (clear) {
-                    handleContestAction("reset", { clearSubmissions: true });
-                  }
+                  setResetClearsScores(false);
+                  setResetConfirmOpen(true);
                 }}
                 className="px-4 py-2.5 rounded-xl bg-secondary hover:bg-destructive/10 text-muted-foreground hover:text-destructive border border-border text-xs flex items-center gap-1.5 transition-colors"
               >
@@ -724,7 +722,7 @@ export default function AdminPage() {
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteQuestion(q.id)}
+                              onClick={() => setDeleteTarget(q)}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                               title="Delete Challenge"
                             >
@@ -1237,6 +1235,75 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* ---- Confirmations for the destructive organiser actions ---- */}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        icon={<Trash2 className="h-5 w-5" />}
+        tone="destructive"
+        title="Delete this challenge?"
+        description={
+          <>
+            <span className="font-semibold text-foreground">
+              {deleteTarget?.title}
+            </span>{" "}
+            and every submission against it are removed for good. Teams keep the
+            coins they already earned from it.
+          </>
+        }
+        confirmLabel="Delete challenge"
+        onConfirm={() => {
+          if (deleteTarget) handleDeleteQuestion(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={endConfirmOpen}
+        onOpenChange={setEndConfirmOpen}
+        icon={<ShieldAlert className="h-5 w-5" />}
+        tone="destructive"
+        title="End the CTF now?"
+        description="The clock stops and every team is locked out of submitting. Final coin balances carry into round 2. You can reopen with overtime afterwards if you need to."
+        confirmLabel="End the CTF"
+        cancelLabel="Keep it running"
+        onConfirm={() => handleContestAction("end")}
+      />
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        onOpenChange={setResetConfirmOpen}
+        icon={<RotateCcw className="h-5 w-5" />}
+        tone="destructive"
+        title="Reset the contest?"
+        description="The contest goes back to PENDING and the clock is cleared, ready to start again. Challenges and registered teams are kept."
+        confirmLabel={resetClearsScores ? "Reset and wipe scores" : "Reset the clock"}
+        onConfirm={() =>
+          handleContestAction("reset", { clearSubmissions: resetClearsScores })
+        }
+      >
+        {/* The old prompt folded this into the OK button, so there was no way
+            to reset the clock without also wiping every score. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-md border border-breach/25 bg-breach/[0.06] p-4">
+          <input
+            type="checkbox"
+            checked={resetClearsScores}
+            onChange={(e) => setResetClearsScores(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--breach)]"
+          />
+          <span>
+            <span className="block font-display text-[13px] font-semibold text-breach">
+              Also wipe every submission and score
+            </span>
+            <span className="mt-1 block text-[12px] leading-relaxed text-muted-foreground">
+              Every team drops to 0 coins and their captured flags are deleted.
+              Leave this off to restart the clock with scores intact.
+            </span>
+          </span>
+        </label>
+      </ConfirmDialog>
     </div>
   );
 }

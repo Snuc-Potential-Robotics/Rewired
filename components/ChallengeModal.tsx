@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Lightbulb, Lock, Send, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "./Toast";
+import { BriefBody } from "./BriefBody";
 
 export interface QuestionItem {
   id: number;
@@ -167,9 +168,7 @@ export function ChallengeModal({
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
           <section>
             <div className="silkscreen mb-2.5">Brief</div>
-            <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-foreground/90">
-              {question.description}
-            </p>
+            <BriefBody description={question.description} />
           </section>
 
           {question.hint && (
