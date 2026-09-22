@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { 
   ShieldAlert, 
   Play, 
@@ -228,7 +229,7 @@ export default function AdminPage() {
   const openAddQuestion = () => {
     setEditingQuestion(null);
     setFormTitle("");
-    setFormCategory("Hardware");
+    setFormCategory("Microcontrollers & Firmware");
     setFormPoints(100);
     setFormDescription("");
     setFormFlag("flag{}");
@@ -395,12 +396,19 @@ export default function AdminPage() {
       <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl overflow-hidden bg-card border border-border flex items-center justify-center p-1 shadow-sm">
+              <Image
+                src="/logo.png"
+                alt="Rewired Logo"
+                width={32}
+                height={32}
+                className="object-contain w-full h-full"
+                priority
+              />
             </div>
             <div>
               <div className="font-mono font-bold text-sm text-foreground flex items-center gap-2">
-                REWIRED // ADMIN
+                REWIRED // HARDWARE CTF ADMIN
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-primary-foreground font-semibold uppercase">
                   Organizer
                 </span>
@@ -713,6 +721,32 @@ export default function AdminPage() {
                         </td>
                       </tr>
                     ))}
+                    {questions.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-16 text-center text-muted-foreground text-xs">
+                          <div className="flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                              <Terminal className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="font-bold text-sm text-foreground">
+                                No Hardware Challenges Added Yet
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Create your first challenge with firmware dumps, oscilloscope captures, bus captures, or PCB diagrams.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={openAddQuestion}
+                              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm transition-all"
+                            >
+                              + Deploy First Hardware Challenge
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -888,23 +922,43 @@ export default function AdminPage() {
                     onChange={(e) => setFormPoints(Number(e.target.value))}
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-foreground font-mono text-xs focus:outline-none focus:border-primary"
                   />
+                  {/* Point quick presets */}
+                  <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                    {[50, 100, 150, 200, 250, 300, 500].map((pt) => (
+                      <button
+                        key={pt}
+                        type="button"
+                        onClick={() => setFormPoints(pt)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all ${
+                          formPoints === pt
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground hover:text-foreground border border-border"
+                        }`}
+                      >
+                        {pt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-foreground mb-1">Category *</label>
+                  <label className="block font-semibold text-foreground mb-1">Hardware Category / Tag *</label>
                   <select
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-primary font-medium"
                   >
-                    <option value="Hardware">Hardware / Robotics</option>
-                    <option value="Web">Web Exploitation</option>
-                    <option value="Cryptography">Cryptography</option>
-                    <option value="Reverse">Reverse Engineering</option>
-                    <option value="Forensics">Forensics / Network</option>
-                    <option value="Misc">Misc / Logic</option>
+                    <option value="Microcontrollers & Firmware">Microcontrollers & Firmware</option>
+                    <option value="Signal Analysis & Oscilloscope">Signal Analysis & Oscilloscope</option>
+                    <option value="Bus Protocols (I2C/SPI/CAN/UART)">Bus Protocols (I2C/SPI/CAN/UART)</option>
+                    <option value="PCB & Reverse Engineering">PCB & Reverse Engineering</option>
+                    <option value="Side-Channel & Fault Injection">Side-Channel & Fault Injection</option>
+                    <option value="Wireless, RF & SDR">Wireless, RF & SDR</option>
+                    <option value="IoT & Sensor Security">IoT & Sensor Security</option>
+                    <option value="Hardware Cryptography">Hardware Cryptography</option>
+                    <option value="General Hardware / Robotics">General Hardware / Robotics</option>
                   </select>
                 </div>
 

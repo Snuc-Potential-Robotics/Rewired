@@ -381,10 +381,30 @@ export default function LeaderboardPage() {
 
                 {!loading && filteredTeams.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-muted-foreground text-xs">
-                      {searchQuery
-                        ? "No teams found matching search."
-                        : "No teams registered yet. Be the first to join!"}
+                    <td colSpan={5} className="py-16 text-center text-muted-foreground text-xs">
+                      <div className="flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                          <Trophy className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="font-bold text-sm text-foreground">
+                            {searchQuery ? "No Matching Teams" : "Telemetry Standby • No Teams Registered Yet"}
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {searchQuery
+                              ? "No registered team matches your search query. Try another name."
+                              : "Be the first team to enter the hardware arena and claim the top of the podium!"}
+                          </p>
+                        </div>
+                        {!searchQuery && !team && (
+                          <button
+                            onClick={() => setAuthModalOpen(true)}
+                            className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs shadow-sm hover:bg-primary/90 transition-all"
+                          >
+                            Register Team Now
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}

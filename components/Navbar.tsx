@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Cpu, 
@@ -88,7 +89,6 @@ export function Navbar({ team, onOpenAuth, onLogout }: NavbarProps) {
   const navLinks = [
     { href: "/", label: "Challenges", icon: Terminal },
     { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-    { href: "/admin", label: "Admin Portal", icon: ShieldAlert },
   ];
 
   return (
@@ -96,15 +96,22 @@ export function Navbar({ team, onOpenAuth, onLogout }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm group-hover:scale-105 transition-transform">
-              <Cpu className="w-5 h-5" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl overflow-hidden bg-card border border-border/80 flex items-center justify-center p-1 shadow-sm group-hover:scale-105 transition-transform">
+              <Image
+                src="/logo.png"
+                alt="Rewired Logo"
+                width={32}
+                height={32}
+                className="object-contain w-full h-full"
+                priority
+              />
             </div>
             <div>
               <div className="font-mono font-bold tracking-tight text-lg text-foreground flex items-center gap-1.5">
                 REWIRED
                 <span className="text-[10px] tracking-wider uppercase font-semibold px-1.5 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">
-                  CTF
+                  HARDWARE CTF
                 </span>
               </div>
               <p className="text-[11px] text-muted-foreground hidden sm:block">
