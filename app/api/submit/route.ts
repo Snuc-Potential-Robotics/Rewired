@@ -20,13 +20,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
   }
 
-  const questionId = Number(body?.questionId);
-  const flag = body?.flag?.trim();
+  const questionId = typeof body?.questionId === "number" ? body.questionId : Number(body?.questionId);
+  const flag = typeof body?.flag === "string" ? body.flag.trim() : null;
 
-  if (!questionId || !flag) {
+  if (!questionId || !flag || isNaN(questionId)) {
     return NextResponse.json(
       { error: "Question ID and flag answer are required." },
       { status: 400 }
+    );
+  }
+
+  // Check rate limit before acquiring a transaction client to prevent connection pool exhaustion / deadlock
+  const rateCheck = await checkSubmissionRateLimit(team.teamId, 4);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      {
+        error: `Cooldown active. Please wait ${rateCheck.retryAfterSeconds} seconds before submitting again.`,
+        retryAfter: rateCheck.retryAfterSeconds,
+      },
+      { status: 429 }
     );
   }
 
@@ -69,19 +81,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Time is up! The competition has officially ended." },
         { status: 403 }
-      );
-    }
-
-    // 3. Check rate limiting (only when contest is active)
-    const rateCheck = await checkSubmissionRateLimit(team.teamId, 4);
-    if (!rateCheck.allowed) {
-      await client.query("ROLLBACK");
-      return NextResponse.json(
-        {
-          error: `Cooldown active. Please wait ${rateCheck.retryAfterSeconds} seconds before submitting again.`,
-          retryAfter: rateCheck.retryAfterSeconds,
-        },
-        { status: 429 }
       );
     }
 

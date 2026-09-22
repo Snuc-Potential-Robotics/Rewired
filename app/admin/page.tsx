@@ -91,7 +91,7 @@ export default function AdminPage() {
 
   // Contest State
   const [contest, setContest] = useState<AdminContestState | null>(null);
-  const [customDurationMinutes, setCustomDurationMinutes] = useState(30);
+  const [customDurationMinutes, setCustomDurationMinutes] = useState(45);
 
   // Questions State
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
@@ -504,7 +504,7 @@ export default function AdminPage() {
                 Remaining Time
               </div>
               <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-primary">
-                {contest ? formatTimerDisplay(contest.time_remaining_seconds) : "30:00"}
+                {contest ? formatTimerDisplay(contest.time_remaining_seconds) : "45:00"}
               </div>
               <div className="text-[10px] text-muted-foreground font-mono mt-1">
                 {contest?.status === "RUNNING"
@@ -536,8 +536,8 @@ export default function AdminPage() {
                     className="bg-card border border-border rounded-lg px-2 py-1 text-foreground font-mono"
                   >
                     <option value={15}>15 mins</option>
-                    <option value={30}>30 mins (Standard)</option>
-                    <option value={45}>45 mins</option>
+                    <option value={30}>30 mins</option>
+                    <option value={45}>45 mins (Standard)</option>
                     <option value={60}>60 mins</option>
                   </select>
                 </div>

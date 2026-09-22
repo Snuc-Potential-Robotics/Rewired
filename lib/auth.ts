@@ -4,9 +4,6 @@ import { cookies } from "next/headers";
 function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    if (process.env.NODE_ENV === "test") {
-      return new TextEncoder().encode("test_jwt_secret_must_be_overridden_in_production");
-    }
     throw new Error(
       "JWT_SECRET environment variable is missing. A secure random secret is required to sign and verify tokens."
     );

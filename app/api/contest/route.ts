@@ -151,18 +151,26 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Running or Ended contest: compute end_time extending from the current end_time or now
+      // Running or Ended contest: compute end_time extending from current end_time or now
       const baseTime = current.end_time && current.status === "RUNNING"
         ? Math.max(new Date(current.end_time).getTime(), Date.now())
         : Date.now();
       const newEndTime = new Date(baseTime + extendMinutes * 60 * 1000);
+      const calculatedDuration = current.start_time
+        ? Math.max(
+            current.duration_seconds || DEFAULT_DURATION_SECONDS,
+            Math.round((newEndTime.getTime() - new Date(current.start_time).getTime()) / 1000)
+          )
+        : (current.duration_seconds || DEFAULT_DURATION_SECONDS) + extendMinutes * 60;
+
       await query(
         `UPDATE contest_state 
          SET status = 'RUNNING',
              end_time = $1,
+             duration_seconds = $2,
              updated_at = NOW()
          WHERE id = 1`,
-        [newEndTime]
+        [newEndTime, calculatedDuration]
       );
       return NextResponse.json({ success: true, message: `Extended CTF by ${extendMinutes} minutes.` });
     }
@@ -172,7 +180,6 @@ export async function POST(req: NextRequest) {
         `UPDATE contest_state 
          SET status = 'ENDED',
              end_time = NOW(),
-             duration_seconds = 0,
              updated_at = NOW()
          WHERE id = 1`
       );

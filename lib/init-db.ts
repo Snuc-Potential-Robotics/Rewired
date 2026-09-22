@@ -1,6 +1,5 @@
 import { query } from "./db";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 
 export async function initDatabase() {
   try {
@@ -16,15 +15,22 @@ export async function initDatabase() {
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT single_contest CHECK (id = 1)
       );
+      ALTER TABLE contest_state ALTER COLUMN duration_seconds SET DEFAULT 2700;
     `);
 
-    // Ensure contest state row 1 exists
+    // Ensure contest state row 1 exists and migrate legacy 1800s default if still pending
     const contestRow = await query("SELECT * FROM contest_state WHERE id = 1");
     if (contestRow.rows.length === 0) {
       await query(`
         INSERT INTO contest_state (id, title, duration_seconds, status)
         VALUES (1, 'Rewired CTF 2026', 2700, 'PENDING')
         ON CONFLICT (id) DO NOTHING;
+      `);
+    } else {
+      await query(`
+        UPDATE contest_state 
+        SET duration_seconds = 2700, updated_at = NOW() 
+        WHERE id = 1 AND duration_seconds = 1800 AND status = 'PENDING';
       `);
     }
 
@@ -37,6 +43,18 @@ export async function initDatabase() {
         score INT NOT NULL DEFAULT 0,
         last_submission_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Reconcile existing case-insensitive duplicate team names before creating unique index
+    await query(`
+      UPDATE teams t
+      SET name = t.name || '_' || t.id
+      WHERE t.id IN (
+        SELECT id FROM (
+          SELECT id, ROW_NUMBER() OVER (PARTITION BY LOWER(name) ORDER BY score DESC, created_at ASC) as rnum
+          FROM teams
+        ) ranked WHERE ranked.rnum > 1
       );
       CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_lower_name ON teams (LOWER(name));
       CREATE INDEX IF NOT EXISTS idx_teams_score ON teams(score DESC, last_submission_at ASC);
@@ -52,16 +70,16 @@ export async function initDatabase() {
       );
     `);
 
-    // Seed admin from environment or generate a secure random password
+    // Seed admin from environment
     const adminEmail = (process.env.ADMIN_EMAIL || "robotics@snuchennai.edu.in").trim().toLowerCase();
     const adminCheck = await query("SELECT id FROM admins WHERE LOWER(email) = LOWER($1)", [
       adminEmail,
     ]);
     if (adminCheck.rows.length === 0) {
-      const plainPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString("hex");
-      if (!process.env.ADMIN_PASSWORD) {
-        console.warn(
-          `[SECURITY NOTICE] ADMIN_PASSWORD was not set. Generated initial random password: ${plainPassword}`
+      const plainPassword = process.env.ADMIN_PASSWORD;
+      if (!plainPassword) {
+        throw new Error(
+          "ADMIN_PASSWORD environment variable is required to initialize the admin account. Please set ADMIN_PASSWORD in your environment."
         );
       }
       const hash = await bcrypt.hash(plainPassword, 10);

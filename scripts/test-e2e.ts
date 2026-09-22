@@ -3,17 +3,23 @@ import assert from "assert";
 const BASE = process.env.TEST_BASE_URL || "http://localhost:3000";
 
 // Safety Guard: prevent running destructive tests against a live production deployment
-if (process.env.ALLOW_DESTRUCTIVE_TESTS !== "true" && !process.env.CI) {
+if (process.env.ALLOW_DESTRUCTIVE_TESTS !== "true") {
   console.error(
     "\n⚠️  SAFETY GUARD: scripts/test-e2e.ts resets contest state and clears submissions.\n" +
-    "To confirm you intend to run this test suite against your local/test database, set:\n" +
+    "To confirm you intend to run this test suite against your test database, set:\n" +
     "ALLOW_DESTRUCTIVE_TESTS=true npx tsx scripts/test-e2e.ts\n"
   );
   process.exit(1);
 }
 
 const adminEmail = (process.env.ADMIN_EMAIL || "robotics@snuchennai.edu.in").trim();
-const adminPassword = process.env.ADMIN_PASSWORD || "password@123";
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (!adminPassword) {
+  console.error(
+    "ADMIN_PASSWORD environment variable is required to run E2E tests. Please specify ADMIN_PASSWORD."
+  );
+  process.exit(1);
+}
 
 async function runTests() {
   console.log("=== STARTING REWIRED E2E VERIFICATION SUITE ===");
@@ -24,9 +30,10 @@ async function runTests() {
   assert.strictEqual(cRes.status, 200);
   const contest = await cRes.json();
   console.log("Contest status:", contest.status, "Duration:", contest.duration_seconds);
-  assert(
-    contest.duration_seconds === 2700 || contest.duration_seconds === 1800,
-    "Duration should be configured (default 2700s / 45m)"
+  assert.strictEqual(
+    contest.duration_seconds,
+    2700,
+    "Contest default duration must be exactly 2700 seconds (45 minutes)"
   );
 
   // Setup: Admin Login
