@@ -193,7 +193,7 @@ export function Navbar({ team, onOpenAuth, onLogout }: NavbarProps) {
                   {team.name}
                 </span>
                 <span className="text-[10px] text-muted-foreground font-mono">
-                  {team.score} PTS
+                  {team.score} COINS
                 </span>
               </div>
 
@@ -252,7 +252,7 @@ export function Navbar({ team, onOpenAuth, onLogout }: NavbarProps) {
             <div className="p-3 rounded-xl bg-secondary/60 border border-border flex items-center justify-between">
               <div>
                 <div className="font-semibold text-sm text-foreground">{team.name}</div>
-                <div className="text-xs text-muted-foreground font-mono">{team.score} PTS</div>
+                <div className="text-xs text-muted-foreground font-mono">{team.score} COINS</div>
               </div>
               <div className="flex items-center gap-2">
                 <button

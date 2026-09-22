@@ -10,8 +10,7 @@ import {
   Send, 
   Loader2, 
   AlertCircle,
-  Tag,
-  Award
+  Coins
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "./Toast";
@@ -137,18 +136,14 @@ export function ChallengeModal({
         <div className="p-6 border-b border-border bg-secondary/30 flex items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/20 text-primary border border-primary/30 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5" />
-                {question.category}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-secondary text-foreground border border-border flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-primary" />
-                {question.points} PTS
+              <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-primary/15 text-primary border border-primary/30 flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5" />
+                {question.points} Coins
               </span>
               {question.isSolved && (
                 <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Solved
+                  Objective Complete
                 </span>
               )}
             </div>
@@ -205,9 +200,9 @@ export function ChallengeModal({
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-3">
               <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
               <div>
-                <div className="font-semibold text-sm">Challenge Solved</div>
+                <div className="font-semibold text-sm">Objective Solved</div>
                 <div className="text-xs text-emerald-400/80">
-                  Your team successfully submitted the correct flag and claimed {question.points} points. Submissions for this challenge are locked.
+                  Your team successfully submitted the correct flag and claimed {question.points} coins for Round 2 bidding. Submissions for this objective are locked.
                 </div>
               </div>
             </div>

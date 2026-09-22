@@ -9,8 +9,7 @@ import { useToast } from "@/components/Toast";
 import { 
   Terminal, 
   Trophy, 
-  Tag, 
-  Award, 
+  Coins, 
   CheckCircle2, 
   Lock, 
   Clock, 
@@ -22,7 +21,11 @@ import {
   Radio,
   Layers,
   Wrench,
-  UserPlus
+  UserPlus,
+  Bot,
+  AlertCircle,
+  FileText,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,18 +36,6 @@ interface TeamState {
   score: number;
   solvedQuestionIds?: number[];
 }
-
-const HARDWARE_CATEGORIES = [
-  "All",
-  "Microcontrollers & Firmware",
-  "Signal & Oscilloscope",
-  "Bus Protocols (I2C/SPI/CAN)",
-  "PCB & Reverse",
-  "Side-Channel Analysis",
-  "Wireless & RF",
-  "IoT & Sensors",
-  "Hardware Crypto",
-];
 
 export default function HomePage() {
   const { toast } = useToast();
@@ -58,7 +49,6 @@ export default function HomePage() {
   const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedQuestion, setSelectedQuestion] = useState<QuestionItem | null>(null);
 
   // 1. Fetch current team session
@@ -143,16 +133,7 @@ export default function HomePage() {
     }
   };
 
-  // Derive active category tabs (default hardware tags + any dynamically added category)
-  const dynamicCategories = Array.from(new Set(questions.map((q) => q.category)));
-  const categories = Array.from(new Set(["All", ...HARDWARE_CATEGORIES.slice(1), ...dynamicCategories]));
-
-  const filteredQuestions =
-    selectedCategory === "All"
-      ? questions
-      : questions.filter((q) => q.category === selectedCategory);
-
-  const totalPoints = questions.reduce((sum, q) => sum + Number(q.points), 0);
+  const totalCoins = questions.reduce((sum, q) => sum + Number(q.points), 0);
   const solvedCount = questions.filter((q) => q.isSolved).length;
 
   const isPending = contestStatus === "PENDING";
@@ -189,7 +170,7 @@ export default function HomePage() {
                 <div>
                   <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-mono font-medium">
                     <Zap className="w-3 h-3" />
-                    Hardware CTF & Embedded Security Challenge
+                    SNUC Potential Robotics • Hardware CTF
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-mono mt-0.5">
                     REWIRED <span className="text-primary">2026</span>
@@ -198,75 +179,152 @@ export default function HomePage() {
               </div>
 
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                30-Minute High-Intensity Hardware Capture The Flag event organized by the{" "}
-                <span className="text-foreground font-semibold">SNUC Potential Robotics Club</span>.
-                Deconstruct firmware, sniff CAN/I2C/SPI bus frames, extract flash dumps, probe circuit traces, and rise on the dynamic leaderboard.
+                Breach the physically isolated air-gapped server room before security changes shift.
+                Sniff BLE advertisements, clone employee RFID credentials, and capture the master-slave authentication token.
               </p>
             </div>
 
-            {/* Quick Stats Panel */}
+            {/* Quick Stats Panel (Coins Focus) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
               <div className="p-3.5 rounded-xl bg-secondary/50 border border-border">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
-                  <Cpu className="w-3.5 h-3.5 text-primary" />
-                  Hardware Targets
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  Objectives
                 </div>
                 <div className="text-xl font-bold font-mono text-foreground mt-1">
-                  {questions.length}
+                  {questions.length} Phases
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-secondary/50 border border-border">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-primary" />
-                  Points in Play
+                  <Coins className="w-3.5 h-3.5 text-primary" />
+                  Total Coins
                 </div>
                 <div className="text-xl font-bold font-mono text-primary mt-1">
-                  {totalPoints}
+                  {totalCoins}
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-secondary/50 border border-border col-span-2 sm:col-span-1">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
                   <Trophy className="w-3.5 h-3.5 text-primary" />
-                  Flags Captured
+                  Your Coins
                 </div>
                 <div className="text-xl font-bold font-mono text-foreground mt-1">
-                  {team ? `${solvedCount}/${questions.length}` : "Sign In"}
+                  {team ? `${team.score} Coins` : "Sign In"}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Category Filter Tabs & Leaderboard Shortcut */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  selectedCategory === cat
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+        {/* MISSION DOSSIER FOR PARTICIPANTS & COMPETITION RULES */}
+        <section className="rounded-2xl border-2 border-primary/30 bg-card p-6 sm:p-7 space-y-5 shadow-md relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Rules Highlights Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 shrink-0">
+                <Bot className="w-5 h-5" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-emerald-300 uppercase tracking-wider">
+                  AI Tools Strictly Permitted
+                </div>
+                <div className="text-emerald-300/80 mt-0.5 leading-relaxed">
+                  Participants are fully authorized to use AI tools (ChatGPT, Claude, Gemini, Copilot, etc.) for firmware analysis, code generation, and debugging.
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-primary/20 text-primary shrink-0">
+                <Coins className="w-5 h-5" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-primary uppercase tracking-wider">
+                  Round 2 Bidding Currency
+                </div>
+                <div className="text-foreground/80 mt-0.5 leading-relaxed">
+                  Teams earn coins through successfully solved flags. Coins earned here in Round 1 will be used as the <strong className="text-primary font-bold">bidding currency in Round 2</strong>!
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <Link
-              href="/leaderboard"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border transition-colors"
-            >
-              <Trophy className="w-3.5 h-3.5 text-primary" />
-              Live Leaderboard
-              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-            </Link>
+          {/* Operation Briefing Content */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2 text-sm font-bold font-mono text-foreground uppercase tracking-wider">
+              <FileText className="w-4 h-4 text-primary" />
+              Operation Briefing: Air-Gap Server Room Infiltration
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1.5">
+                <div className="font-bold text-primary uppercase tracking-wider text-[11px]">
+                  📖 The Story
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  You guys have been contracted to breach a physically isolated server room. Standard attacks over this server have failed because the system is completely air-gapped. We have 45 minutes before the security changes shift.
+                </p>
+                <p className="text-muted-foreground leading-relaxed pt-1">
+                  Your target is a lazy systems administrator who has a habit of reusing credentials and leaving equipment lying around. We believe he dropped his company-issued wireless earphones in the lobby and left his physical access card on a desk.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1.5">
+                <div className="font-bold text-primary uppercase tracking-wider text-[11px]">
+                  🎯 The Mission
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  Need to get access to the server room by using the username and physical access card, and compromise the system by getting the authentication key that the master system uses to access the slaves.
+                </p>
+                <div className="pt-2 border-t border-border/70 text-[11px] text-foreground font-mono">
+                  <span className="text-primary font-bold">Hardware Kit Per Team:</span>
+                  <ul className="list-disc list-inside text-muted-foreground mt-1 space-y-0.5">
+                    <li>1x RC522 RFID Reader</li>
+                    <li>1x ESP32 Microcontroller</li>
+                    <li>Breadboard and jumper wires</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-1.5">
+                <div className="font-bold text-primary uppercase tracking-wider text-[11px]">
+                  💡 Critical Intelligence
+                </div>
+                <p className="text-muted-foreground leading-relaxed">
+                  <strong className="text-foreground">Additional Info:</strong> The company is giving the same username for every product the employee gets from the company.
+                </p>
+                <p className="text-muted-foreground leading-relaxed pt-1">
+                  Every 10 minutes, technical hints will be unlocked or dispatched by administrators if teams need assistance cracking the protocols.
+                </p>
+              </div>
+            </div>
           </div>
+        </section>
+
+        {/* Section Header & Leaderboard Link */}
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold font-mono text-foreground uppercase tracking-tight">
+              Infiltration Objectives
+            </h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground font-mono">
+              {questions.length} Active Targets
+            </span>
+          </div>
+
+          <Link
+            href="/leaderboard"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border transition-colors shrink-0"
+          >
+            <Trophy className="w-3.5 h-3.5 text-primary" />
+            Live Coins Leaderboard
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+          </Link>
         </div>
 
         {/* Challenges Area with Pre-Contest Blur Effect or Empty State */}
@@ -280,10 +338,10 @@ export default function HomePage() {
                 </div>
                 <div>
                   <div className="font-bold text-sm text-foreground">
-                    Hardware CTF Concluded!
+                    Infiltration Window Concluded!
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    The 30-minute competition has concluded. Check out the top 3 champions on the podium.
+                    The competition has ended. Check out the top 3 teams on the podium to see final coin balances for Round 2!
                   </div>
                 </div>
               </div>
@@ -350,10 +408,10 @@ export default function HomePage() {
 
                     <div className="space-y-2">
                       <h2 className="text-xl font-bold tracking-tight text-foreground font-mono">
-                        Hardware CTF Starts in a Few Minutes
+                        CTF Commencing in a Few Minutes
                       </h2>
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        Hardware challenge payloads and firmware images are encrypted. The 30-minute countdown will begin as soon as the administrator initiates the launch signal.
+                        Hardware challenge targets and terminals are locked. The countdown will begin as soon as the administrator initiates the launch signal.
                       </p>
                     </div>
 
@@ -384,33 +442,33 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Challenges Grid */}
+              {/* Challenges Grid (Clean, Without Tags) */}
               <div
-                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-all duration-500 ${
+                className={`grid grid-cols-1 md:grid-cols-3 gap-5 transition-all duration-500 ${
                   isPending ? "filter blur-md pointer-events-none select-none opacity-60" : ""
                 }`}
               >
-                {filteredQuestions.map((q) => (
+                {questions.map((q, idx) => (
                   <div
                     key={q.id}
                     onClick={() => !isPending && setSelectedQuestion(q)}
-                    className={`group relative rounded-2xl border bg-card p-5 transition-all cursor-pointer flex flex-col justify-between hover:border-primary/50 hover:shadow-lg ${
+                    className={`group relative rounded-2xl border bg-card p-6 transition-all cursor-pointer flex flex-col justify-between hover:border-primary/60 hover:shadow-xl ${
                       q.isSolved
                         ? "border-emerald-500/40 bg-card/60"
                         : "border-border"
                     }`}
                   >
-                    <div className="space-y-3">
-                      {/* Card Header */}
+                    <div className="space-y-3.5">
+                      {/* Card Header without tags */}
                       <div className="flex items-center justify-between gap-2">
-                        <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-secondary text-muted-foreground border border-border flex items-center gap-1">
-                          <Tag className="w-3 h-3 text-primary" />
-                          {q.category}
+                        <span className="text-xs font-mono font-bold text-muted-foreground">
+                          OBJECTIVE #{idx + 1}
                         </span>
 
                         <div className="flex items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-primary/15 text-primary border border-primary/20">
-                            {q.points} PTS
+                          <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-primary/15 text-primary border border-primary/30 flex items-center gap-1">
+                            <Coins className="w-3.5 h-3.5" />
+                            {q.points} Coins
                           </span>
                           {q.isSolved && (
                             <span className="p-1 rounded-full bg-emerald-500/10 text-emerald-400">
@@ -422,10 +480,10 @@ export default function HomePage() {
 
                       {/* Title & Preview */}
                       <div>
-                        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug">
                           {q.title}
                         </h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed font-sans">
+                        <p className="text-xs text-muted-foreground line-clamp-3 mt-2 leading-relaxed font-sans">
                           {q.description}
                         </p>
                       </div>
@@ -438,20 +496,14 @@ export default function HomePage() {
                         {q.solves_count ?? 0} solves
                       </span>
 
-                      <span className="font-semibold text-[11px] text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                        {q.isSolved ? "View Solution" : "Solve Target"}
-                        <ChevronRight className="w-3 h-3" />
+                      <span className="font-semibold text-xs text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                        {q.isSolved ? "View Solution" : "Open Target"}
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {!loadingQuestions && filteredQuestions.length === 0 && questions.length > 0 && (
-                <div className="text-center py-16 text-muted-foreground text-sm">
-                  No challenges found under the &quot;{selectedCategory}&quot; category.
-                </div>
-              )}
             </>
           )}
         </div>

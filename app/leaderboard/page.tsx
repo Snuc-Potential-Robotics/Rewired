@@ -129,7 +129,7 @@ export default function LeaderboardPage() {
               )}
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              Rankings automatically update with fluid animations upon verified flag submissions.
+              Rankings automatically update with fluid animations upon verified flag submissions. Teams earn <span className="text-primary font-semibold">Coins</span> that serve as the bidding currency in Round 2!
             </p>
           </div>
 
@@ -195,7 +195,7 @@ export default function LeaderboardPage() {
                   </h3>
                   <div className="font-mono text-2xl font-black text-foreground mt-2">
                     {topThree[1].score}{" "}
-                    <span className="text-xs text-muted-foreground font-normal">PTS</span>
+                    <span className="text-xs text-muted-foreground font-normal">COINS</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -224,7 +224,7 @@ export default function LeaderboardPage() {
                   </h3>
                   <div className="font-mono text-3xl font-black text-primary mt-2">
                     {topThree[0].score}{" "}
-                    <span className="text-xs text-muted-foreground font-normal">PTS</span>
+                    <span className="text-xs text-muted-foreground font-normal">COINS</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -253,7 +253,7 @@ export default function LeaderboardPage() {
                   </h3>
                   <div className="font-mono text-2xl font-black text-foreground mt-2">
                     {topThree[2].score}{" "}
-                    <span className="text-xs text-muted-foreground font-normal">PTS</span>
+                    <span className="text-xs text-muted-foreground font-normal">COINS</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
@@ -294,7 +294,7 @@ export default function LeaderboardPage() {
                   <th className="py-3.5 px-4">Team</th>
                   <th className="py-3.5 px-4 text-center">Solves</th>
                   <th className="py-3.5 px-4 text-center">Last Submission</th>
-                  <th className="py-3.5 px-4 text-right">Score</th>
+                  <th className="py-3.5 px-4 text-right">Coins (Round 2 Currency)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
@@ -365,13 +365,13 @@ export default function LeaderboardPage() {
                           {formatTimeAgo(t.lastSubmissionAt)}
                         </td>
 
-                        {/* Score */}
+                        {/* Score / Coins */}
                         <td className="py-4 px-4 text-right">
                           <span className="font-mono text-base font-extrabold text-primary">
                             {t.score}
                           </span>
                           <span className="text-[10px] text-muted-foreground ml-1 font-mono">
-                            PTS
+                            COINS
                           </span>
                         </td>
                       </motion.tr>

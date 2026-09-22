@@ -23,7 +23,13 @@ import {
   Tag,
   Key,
   Flame,
-  PlusCircle
+  PlusCircle,
+  Coins,
+  BookOpen,
+  Lock,
+  Cpu,
+  Radio,
+  FileKey
 } from "lucide-react";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
@@ -78,8 +84,8 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
-  // Active Tab: 'controls' | 'questions' | 'submissions' | 'teams'
-  const [activeTab, setActiveTab] = useState<"controls" | "questions" | "submissions" | "teams">("controls");
+  // Active Tab: 'questions' | 'guide' | 'submissions' | 'teams'
+  const [activeTab, setActiveTab] = useState<"questions" | "guide" | "submissions" | "teams">("questions");
 
   // Contest State
   const [contest, setContest] = useState<AdminContestState | null>(null);
@@ -229,7 +235,7 @@ export default function AdminPage() {
   const openAddQuestion = () => {
     setEditingQuestion(null);
     setFormTitle("");
-    setFormCategory("Microcontrollers & Firmware");
+    setFormCategory("Hardware");
     setFormPoints(100);
     setFormDescription("");
     setFormFlag("flag{}");
@@ -598,21 +604,32 @@ export default function AdminPage() {
         </section>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-border gap-2">
+        <div className="flex border-b border-border gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab("questions")}
-            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all shrink-0 ${
               activeTab === "questions"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <Terminal className="w-4 h-4" />
-            Questions & Answers ({questions.length})
+            Challenges & Flags ({questions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("guide")}
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all shrink-0 ${
+              activeTab === "guide"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+            Organizer Secret Guide (Confidential)
           </button>
           <button
             onClick={() => setActiveTab("submissions")}
-            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all shrink-0 ${
               activeTab === "submissions"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -623,7 +640,7 @@ export default function AdminPage() {
           </button>
           <button
             onClick={() => setActiveTab("teams")}
-            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all ${
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold border-b-2 transition-all shrink-0 ${
               activeTab === "teams"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
@@ -641,7 +658,7 @@ export default function AdminPage() {
               <div>
                 <h3 className="text-base font-bold font-mono text-foreground">Challenge Management</h3>
                 <p className="text-xs text-muted-foreground">
-                  Add, update, or edit points, flags, and hints. Flags are hidden from contestants until solved.
+                  Manage challenges, flags, and coin rewards. Coins earned by teams are used as bidding currency in Round 2.
                 </p>
               </div>
               <button
@@ -659,8 +676,8 @@ export default function AdminPage() {
                   <thead>
                     <tr className="border-b border-border bg-secondary/40 text-muted-foreground font-mono uppercase tracking-wider text-[11px]">
                       <th className="py-3 px-4 w-12 text-center">#</th>
-                      <th className="py-3 px-4">Title & Category</th>
-                      <th className="py-3 px-4">Points</th>
+                      <th className="py-3 px-4">Challenge Title</th>
+                      <th className="py-3 px-4">Coins Reward</th>
                       <th className="py-3 px-4">Secret Flag / Answer</th>
                       <th className="py-3 px-4 text-center">Solves / Attempts</th>
                       <th className="py-3 px-4 text-center">Status</th>
@@ -675,13 +692,9 @@ export default function AdminPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           <div className="font-bold text-foreground text-sm">{q.title}</div>
-                          <div className="text-[11px] text-primary flex items-center gap-1 mt-0.5 font-mono">
-                            <Tag className="w-3 h-3" />
-                            {q.category}
-                          </div>
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-foreground">
-                          {q.points} PTS
+                        <td className="py-3.5 px-4 font-mono font-bold text-primary">
+                          {q.points} COINS
                         </td>
                         <td className="py-3.5 px-4 font-mono text-primary bg-secondary/20 rounded px-2">
                           <code className="text-[11px] select-all">{q.flag}</code>
@@ -754,6 +767,194 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* TAB: ORGANIZER SECRET GUIDE (NOT FOR PARTICIPANTS) */}
+        {activeTab === "guide" && (
+          <div className="space-y-6">
+            <div className="rounded-2xl border-2 border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 space-y-3">
+              <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-bold uppercase tracking-wider">
+                <Lock className="w-4 h-4" />
+                STRICTLY CONFIDENTIAL • ORGANIZER MASTER SHEET • DO NOT SHARE WITH PARTICIPANTS
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black font-mono tracking-tight text-foreground">
+                Air-Gap Server Room Breach — Attack Vectors & Orchestration Guide
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This document contains the ground truth attack vectors, hardware execution paths, credential locations, and the official 10-minute hint release schedule for organizers and proctors.
+              </p>
+            </div>
+
+            {/* 3-Phase Ground Truth Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Phase 1 Truth */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-1 bg-amber-400" />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400">
+                    PHASE 1 DEBRIEF
+                  </span>
+                  <span className="text-xs font-mono font-bold text-primary">150 COINS</span>
+                </div>
+                <h4 className="font-bold text-sm text-foreground font-mono">
+                  Username Extraction: BLE Raw Data
+                </h4>
+                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                  <p>
+                    <strong className="text-foreground">Mechanism:</strong> The target dropped his company-issued wireless earphones in the lobby.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Ground Truth:</strong> The username is printed in the <span className="text-amber-400 font-semibold">raw BLE advertisement data</span> of the wireless device.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Solution Method:</strong> Teams must use an ESP32 (BLE scanner sketch) or mobile BLE packet analyzer to inspect advertising payload packets and extract the embedded username.
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
+                    Flag: <code className="text-primary font-bold">flag&#123;sysadmin_ble_airgap_user&#125;</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase 2 Truth */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-1 bg-primary" />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                    PHASE 2 DEBRIEF
+                  </span>
+                  <span className="text-xs font-mono font-bold text-primary">200 COINS</span>
+                </div>
+                <h4 className="font-bold text-sm text-foreground font-mono">
+                  Password: RC522 RFID + Laptop Update
+                </h4>
+                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                  <p>
+                    <strong className="text-foreground">Mechanism:</strong> Sysadmin left his physical RFID access badge on the desk.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Ground Truth:</strong> The team must read the physical access card using an <span className="text-primary font-semibold">RC522 RFID reader and an ESP32</span>.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Organizer Action:</strong> After obtaining the credentials from the RFID card, teams <span className="text-amber-400 font-semibold">must go to the organizers&apos; laptop to update them</span> and verify access.
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
+                    Flag: <code className="text-primary font-bold">flag&#123;rfid_rc522_esp32_badge_cloned&#125;</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phase 3 Truth */}
+              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
+                <div className="absolute top-0 inset-x-0 h-1 bg-emerald-400" />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400">
+                    PHASE 3 DEBRIEF
+                  </span>
+                  <span className="text-xs font-mono font-bold text-primary">250 COINS</span>
+                </div>
+                <h4 className="font-bold text-sm text-foreground font-mono">
+                  Master-Slave Authentication Key Intercept
+                </h4>
+                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                  <p>
+                    <strong className="text-foreground">Mechanism:</strong> Server room system is air-gapped from traditional Ethernet/WAN.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Ground Truth:</strong> The authentication key is <span className="text-emerald-400 font-semibold">transmitted from the master system to other slave systems</span>.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Solution Method:</strong> Teams must intercept/sniff this key transmission between the master ESP32 and slave node to compromise the full system.
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
+                    Flag: <code className="text-primary font-bold">flag&#123;master_slave_airgap_compromised_2026&#125;</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hint Schedule & Equipment Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Hint Schedule */}
+              <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
+                  <Clock className="w-4 h-4 text-primary" />
+                  HINTS RELEASE SCHEDULE (10-MINUTE INTERVALS)
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Hints must be released every 10 minutes to guide teams through hardware bottlenecks without spoiling flags:
+                </p>
+
+                <div className="space-y-3 font-mono text-xs">
+                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
+                    <div className="flex items-center justify-between text-amber-400 font-bold text-[11px]">
+                      <span>MINUTE 10:00 (T+10)</span>
+                      <span>Phase 1 Hint</span>
+                    </div>
+                    <p className="text-[11px] text-foreground font-sans">
+                      &quot;Inspect raw BLE advertising packets. Earphones broadcast identification metadata inside custom manufacturer data and complete local name attributes.&quot;
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
+                    <div className="flex items-center justify-between text-primary font-bold text-[11px]">
+                      <span>MINUTE 20:00 (T+20)</span>
+                      <span>Phase 2 Hint</span>
+                    </div>
+                    <p className="text-[11px] text-foreground font-sans">
+                      &quot;Wire RC522 SPI bus (SDA, SCK, MOSI, MISO, RST) to ESP32. Read the UID and memory blocks from the card, then report to the organizer laptop station to authenticate.&quot;
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
+                    <div className="flex items-center justify-between text-emerald-400 font-bold text-[11px]">
+                      <span>MINUTE 30:00 (T+30)</span>
+                      <span>Phase 3 Hint</span>
+                    </div>
+                    <p className="text-[11px] text-foreground font-sans">
+                      &quot;The Master node transmits heartbeats and security tokens to slave nodes. Sniff this communication channel to capture the master auth handshake.&quot;
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Equipment / Components Needed */}
+              <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  EQUIPMENT / HARDWARE MASTER CHECKLIST
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Physical gear required for deploying and maintaining the competition environment:
+                </p>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border space-y-2">
+                    <div className="text-xs font-bold text-primary font-mono flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5" />
+                      1. Hardware Required for Each Team
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc font-mono">
+                      <li><strong className="text-foreground">RC522 RFID reader</strong> – 1 unit per team</li>
+                      <li><strong className="text-foreground">ESP32 Development Board</strong> – 1 unit per team</li>
+                      <li><strong className="text-foreground">Breadboard & Connecting Jumper Wires</strong> – As required (Dupont male-to-female / male-to-male)</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border space-y-2">
+                    <div className="text-xs font-bold text-amber-400 font-mono flex items-center gap-2">
+                      <Terminal className="w-3.5 h-3.5" />
+                      2. Hardware Required for Competition Environment
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc font-mono">
+                      <li><strong className="text-foreground">Organizer Laptop</strong> – 1 unit (for verifying & updating credentials)</li>
+                      <li><strong className="text-foreground">ESP Nodes</strong> – 2 units (Master node & Slave system node)</li>
+                      <li><strong className="text-foreground">RFID Tag / Physical Access Card</strong> – 1 unit</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB 2: LIVE SUBMISSIONS MONITOR */}
         {activeTab === "submissions" && (
           <div className="space-y-4">
@@ -802,7 +1003,7 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="py-3 px-4 text-right font-bold text-primary">
-                          {s.is_correct ? `+${s.points_awarded}` : "0"}
+                          {s.is_correct ? `+${s.points_awarded} COINS` : "0"}
                         </td>
                       </tr>
                     ))}
@@ -827,7 +1028,7 @@ export default function AdminPage() {
             <div>
               <h3 className="text-base font-bold font-mono text-foreground">Registered Teams Overview</h3>
               <p className="text-xs text-muted-foreground">
-                All teams registered with their exclusive unique access codes.
+                All teams registered with their exclusive unique access codes and accumulated Round 2 bidding coins.
               </p>
             </div>
 
@@ -840,7 +1041,7 @@ export default function AdminPage() {
                       <th className="py-3 px-4">Team Name</th>
                       <th className="py-3 px-4">Unique Access Code</th>
                       <th className="py-3 px-4 text-center">Solved Challenges</th>
-                      <th className="py-3 px-4 text-right">Score</th>
+                      <th className="py-3 px-4 text-right">Coins (Round 2 Currency)</th>
                       <th className="py-3 px-4 text-right">Registration Time</th>
                     </tr>
                   </thead>
@@ -858,7 +1059,7 @@ export default function AdminPage() {
                           <span className="text-emerald-400 font-semibold">{t.solves_count}</span>
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-primary text-sm">
-                          {t.score} PTS
+                          {t.score} COINS
                         </td>
                         <td className="py-3.5 px-4 text-right text-muted-foreground text-[11px] font-mono">
                           {new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -912,7 +1113,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-foreground mb-1">Points *</label>
+                  <label className="block font-semibold text-foreground mb-1">Coins Reward *</label>
                   <input
                     type="number"
                     required
@@ -920,7 +1121,7 @@ export default function AdminPage() {
                     step={10}
                     value={formPoints}
                     onChange={(e) => setFormPoints(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-foreground font-mono text-xs focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-primary font-mono text-xs focus:outline-none focus:border-primary font-bold"
                   />
                   {/* Point quick presets */}
                   <div className="flex items-center gap-1 mt-1.5 flex-wrap">
@@ -944,22 +1145,14 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-foreground mb-1">Hardware Category / Tag *</label>
-                  <select
+                  <label className="block font-semibold text-foreground mb-1">Challenge Category (Optional)</label>
+                  <input
+                    type="text"
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
+                    placeholder="e.g. Hardware"
                     className="w-full px-3 py-2 rounded-xl bg-secondary/50 border border-border text-foreground text-xs focus:outline-none focus:border-primary font-medium"
-                  >
-                    <option value="Microcontrollers & Firmware">Microcontrollers & Firmware</option>
-                    <option value="Signal Analysis & Oscilloscope">Signal Analysis & Oscilloscope</option>
-                    <option value="Bus Protocols (I2C/SPI/CAN/UART)">Bus Protocols (I2C/SPI/CAN/UART)</option>
-                    <option value="PCB & Reverse Engineering">PCB & Reverse Engineering</option>
-                    <option value="Side-Channel & Fault Injection">Side-Channel & Fault Injection</option>
-                    <option value="Wireless, RF & SDR">Wireless, RF & SDR</option>
-                    <option value="IoT & Sensor Security">IoT & Sensor Security</option>
-                    <option value="Hardware Cryptography">Hardware Cryptography</option>
-                    <option value="General Hardware / Robotics">General Hardware / Robotics</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
