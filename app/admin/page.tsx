@@ -156,34 +156,30 @@ export default function AdminPage() {
     checkAdminAuth();
   }, [checkAdminAuth]);
 
-  // 2. Fetch Contest, Questions, Submissions, Teams
+  // 2. Fetch Contest, Questions, Submissions, Teams in parallel
   const fetchAllData = useCallback(async () => {
     if (!isAdmin) return;
 
     try {
-      // Contest
-      const cRes = await fetch("/api/contest");
+      const [cRes, qRes, sRes, tRes] = await Promise.all([
+        fetch("/api/contest", { cache: "no-store" }),
+        fetch("/api/questions", { cache: "no-store" }),
+        fetch("/api/admin/submissions", { cache: "no-store" }),
+        fetch("/api/admin/teams", { cache: "no-store" }),
+      ]);
+
       if (cRes.ok) {
         const cData = await cRes.json();
         setContest(cData);
       }
-
-      // Questions
-      const qRes = await fetch("/api/questions");
       if (qRes.ok) {
         const qData = await qRes.json();
         setQuestions(qData.questions || []);
       }
-
-      // Submissions
-      const sRes = await fetch("/api/admin/submissions");
       if (sRes.ok) {
         const sData = await sRes.json();
         setSubmissions(sData.submissions || []);
       }
-
-      // Teams
-      const tRes = await fetch("/api/admin/teams");
       if (tRes.ok) {
         const tData = await tRes.json();
         setTeams(tData.teams || []);
