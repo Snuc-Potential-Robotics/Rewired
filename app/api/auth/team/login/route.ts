@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { query } from "@/lib/db";
 import { createTeamToken } from "@/lib/auth";
+import { checkLoginRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Please provide both your Team Name and Unique Access Code." },
         { status: 400 }
+      );
+    }
+
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "direct-client";
+
+    // Throttle login attempts per IP and per team to prevent brute-forcing 6-character access codes
+    const teamThrottling = await checkLoginRateLimit(`team:${name.toLowerCase()}`, 5, 60);
+    if (!teamThrottling.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many login attempts for this team. Please wait ${teamThrottling.retryAfterSeconds}s before retrying.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    const ipThrottling = await checkLoginRateLimit(`ip:${ip}`, 15, 60);
+    if (!ipThrottling.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many login attempts from this network. Please wait ${ipThrottling.retryAfterSeconds}s before retrying.`,
+        },
+        { status: 429 }
       );
     }
 

@@ -1,14 +1,15 @@
 import { query } from "./db";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export async function initDatabase() {
   try {
-    // 1. Contest State table
+    // 1. Contest State table (Default 45 minutes = 2700 seconds)
     await query(`
       CREATE TABLE IF NOT EXISTS contest_state (
         id INT PRIMARY KEY DEFAULT 1,
         title VARCHAR(100) NOT NULL DEFAULT 'Rewired CTF 2026',
-        duration_seconds INT NOT NULL DEFAULT 1800,
+        duration_seconds INT NOT NULL DEFAULT 2700,
         status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
         start_time TIMESTAMPTZ,
         end_time TIMESTAMPTZ,
@@ -22,21 +23,22 @@ export async function initDatabase() {
     if (contestRow.rows.length === 0) {
       await query(`
         INSERT INTO contest_state (id, title, duration_seconds, status)
-        VALUES (1, 'Rewired CTF 2026', 1800, 'PENDING')
+        VALUES (1, 'Rewired CTF 2026', 2700, 'PENDING')
         ON CONFLICT (id) DO NOTHING;
       `);
     }
 
-    // 2. Teams table
+    // 2. Teams table with case-insensitive unique index
     await query(`
       CREATE TABLE IF NOT EXISTS teams (
         id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
         code VARCHAR(20) NOT NULL UNIQUE,
         score INT NOT NULL DEFAULT 0,
         last_submission_at TIMESTAMPTZ,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_lower_name ON teams (LOWER(name));
       CREATE INDEX IF NOT EXISTS idx_teams_score ON teams(score DESC, last_submission_at ASC);
     `);
 
@@ -50,15 +52,22 @@ export async function initDatabase() {
       );
     `);
 
-    // Seed default admin: robotics@snuchennai.edu.in / password@123
-    const adminCheck = await query("SELECT * FROM admins WHERE email = $1", [
-      "robotics@snuchennai.edu.in",
+    // Seed admin from environment or generate a secure random password
+    const adminEmail = (process.env.ADMIN_EMAIL || "robotics@snuchennai.edu.in").trim().toLowerCase();
+    const adminCheck = await query("SELECT id FROM admins WHERE LOWER(email) = LOWER($1)", [
+      adminEmail,
     ]);
     if (adminCheck.rows.length === 0) {
-      const hash = await bcrypt.hash("password@123", 10);
+      const plainPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString("hex");
+      if (!process.env.ADMIN_PASSWORD) {
+        console.warn(
+          `[SECURITY NOTICE] ADMIN_PASSWORD was not set. Generated initial random password: ${plainPassword}`
+        );
+      }
+      const hash = await bcrypt.hash(plainPassword, 10);
       await query(
         "INSERT INTO admins (email, password_hash) VALUES ($1, $2)",
-        ["robotics@snuchennai.edu.in", hash]
+        [adminEmail, hash]
       );
     }
 
@@ -95,6 +104,16 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_submissions_created_at ON submissions(created_at DESC);
     `);
 
+    // 6. Distributed Rate Limits table for multi-instance deployments
+    await query(`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        key VARCHAR(255) PRIMARY KEY,
+        last_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        attempt_count INT NOT NULL DEFAULT 1
+      );
+      CREATE INDEX IF NOT EXISTS idx_rate_limits_last_attempt ON rate_limits(last_attempt_at);
+    `);
+
     return { success: true };
   } catch (error) {
     console.error("Database initialization error:", error);
@@ -103,16 +122,17 @@ export async function initDatabase() {
 }
 
 /**
- * Completely purges all questions, teams, and submissions for a fresh contest launch.
+ * Purges questions, teams, and submissions for a fresh contest launch.
  */
 export async function clearAllContestData() {
   await query("DELETE FROM submissions");
   await query("DELETE FROM questions");
   await query("DELETE FROM teams");
+  await query("DELETE FROM rate_limits");
   await query(
     `UPDATE contest_state 
      SET status = 'PENDING',
-         duration_seconds = 1800,
+         duration_seconds = 2700,
          start_time = NULL,
          end_time = NULL,
          updated_at = NOW()

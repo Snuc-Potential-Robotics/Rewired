@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check duplicate team name (case-insensitive)
+    // Pre-check duplicate team name (case-insensitive)
     const existing = await query(
       "SELECT id, name FROM teams WHERE LOWER(name) = LOWER($1)",
       [name]
@@ -79,7 +79,15 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: unknown) {
+    // Gracefully handle database unique constraint violation race conditions (Postgres 23505)
+    if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "23505") {
+      return NextResponse.json(
+        { error: "A team with this name or code already exists. Please choose a different name." },
+        { status: 409 }
+      );
+    }
+
     console.error("Team registration error:", error);
     return NextResponse.json(
       { error: "Failed to register team. Please try again." },

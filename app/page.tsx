@@ -243,7 +243,7 @@ export default function HomePage() {
           onClose={() => setSelected(null)}
           contestStatus={contest.status}
           isTeamLoggedIn={Boolean(team)}
-          onOpenAuth={() => openAuth("register")}
+          onOpenAuth={() => openAuth("login")}
           onSolvedSuccess={handleSolved}
         />
       )}

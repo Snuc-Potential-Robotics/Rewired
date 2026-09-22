@@ -133,6 +133,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const numPoints = Number(points);
+    if (isNaN(numPoints) || numPoints <= 0 || numPoints > 10000) {
+      return NextResponse.json(
+        { error: "Points must be a positive number between 1 and 10,000." },
+        { status: 400 }
+      );
+    }
+
     const res = await query(
       `INSERT INTO questions (title, category, points, description, flag, hint, order_index, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
@@ -140,7 +148,7 @@ export async function POST(req: NextRequest) {
       [
         title.trim(),
         category.trim(),
-        Number(points),
+        numPoints,
         description.trim(),
         flag.trim(),
         hint ? hint.trim() : null,
@@ -173,6 +181,21 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
     }
 
+    let numPoints: number | null = null;
+    if (points !== undefined) {
+      numPoints = Number(points);
+      if (isNaN(numPoints) || numPoints <= 0 || numPoints > 10000) {
+        return NextResponse.json(
+          { error: "Points must be a positive number between 1 and 10,000." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Support explicitly clearing hint by passing empty string or null
+    const hintProvided = hint !== undefined;
+    const cleanHint = hint && typeof hint === "string" && hint.trim().length > 0 ? hint.trim() : null;
+
     const res = await query(
       `UPDATE questions
        SET title = COALESCE($1, title),
@@ -180,18 +203,19 @@ export async function PUT(req: NextRequest) {
            points = COALESCE($3, points),
            description = COALESCE($4, description),
            flag = COALESCE($5, flag),
-           hint = COALESCE($6, hint),
-           order_index = COALESCE($7, order_index),
-           is_active = COALESCE($8, is_active)
-       WHERE id = $9
+           hint = CASE WHEN $6 = TRUE THEN $7 ELSE hint END,
+           order_index = COALESCE($8, order_index),
+           is_active = COALESCE($9, is_active)
+       WHERE id = $10
        RETURNING *`,
       [
-        title?.trim(),
-        category?.trim(),
-        points !== undefined ? Number(points) : null,
-        description?.trim(),
-        flag?.trim(),
-        hint !== undefined ? (hint ? hint.trim() : null) : null,
+        title?.trim() || null,
+        category?.trim() || null,
+        numPoints,
+        description?.trim() || null,
+        flag?.trim() || null,
+        hintProvided,
+        cleanHint,
         order_index !== undefined ? Number(order_index) : null,
         is_active !== undefined ? Boolean(is_active) : null,
         Number(id),
@@ -224,7 +248,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
+      return NextResponse.json({ error: "Challenge ID required." }, { status: 400 });
     }
 
     await query("DELETE FROM questions WHERE id = $1", [Number(id)]);

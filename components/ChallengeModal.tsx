@@ -212,6 +212,10 @@ export function ChallengeModal({
             <Banner tone="signal" icon={<Lock className="h-4 w-4" />} title="Not started yet">
               An organiser starts the clock. Submissions open the moment they do.
             </Banner>
+          ) : contestStatus === "PAUSED" ? (
+            <Banner tone="muted" icon={<Lock className="h-4 w-4" />} title="Contest is paused">
+              The competition clock is currently paused by administrators. Flag submissions will resume when the contest is unpaused.
+            </Banner>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="silkscreen">Submit the flag</div>

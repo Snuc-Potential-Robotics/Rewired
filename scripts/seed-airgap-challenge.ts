@@ -25,8 +25,8 @@ The company is giving the same username for every product the employee gets from
 
 [SUBMISSION]
 Enter the recovered username wrapped in flag format: flag{username}`,
-      flag: "flag{sysadmin_snuc_2026}",
-      hint: "The company earphones broadcast raw advertisement frames. Inspect the BLE device name and manufacturer payload.",
+      flag: "flag{sysadmin_ble_airgap_user}",
+      hint: "Inspect raw BLE advertising packets. Earphones broadcast identification metadata inside custom manufacturer data and complete local name attributes.",
       order_index: 1,
     },
     {
@@ -46,8 +46,8 @@ Build an RFID reader using your team's RC522 module and ESP32 breadboard kit. Br
 
 [SUBMISSION]
 Enter the recovered access card password wrapped in flag format: flag{password}`,
-      flag: "flag{rfid_rc522_access_granted}",
-      hint: "Wire the RC522 to the ESP32 SPI pins (MOSI, MISO, SCK, SS/SDA, RST) and read the card UID / sector data.",
+      flag: "flag{rfid_rc522_esp32_badge_cloned}",
+      hint: "Wire RC522 SPI bus (SDA, SCK, MOSI, MISO, RST) to ESP32. Read the UID and memory blocks from the card, then report to the organizer laptop station to authenticate.",
       order_index: 2,
     },
     {
@@ -62,8 +62,8 @@ The master system transmits an authentication key to all slave units across the 
 
 [SUBMISSION]
 Enter the captured master authentication key wrapped in flag format: flag{auth_key}`,
-      flag: "flag{master_esp_slave_auth_key}",
-      hint: "Sniff the wireless frames exchanged between the Master ESP and Slave ESP units. The master broadcasts the authentication token periodically.",
+      flag: "flag{master_slave_airgap_compromised_2026}",
+      hint: "The Master node transmits heartbeats and security tokens to slave nodes. Sniff this communication channel to capture the master auth handshake.",
       order_index: 3,
     },
   ];
@@ -76,7 +76,7 @@ Enter the captured master authentication key wrapped in flag format: flag{auth_k
     );
   }
 
-  console.log("Successfully seeded 3 Air-Gap Infiltration challenges!");
+  console.log("Successfully seeded 3 Air-Gap Infiltration challenges with canonical ground-truth flags!");
 }
 
 seedAirGapChallenges()
