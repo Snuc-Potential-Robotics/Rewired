@@ -1,0 +1,245 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   REWIRED 2026 — instrument-panel design system
+
+   The subject is physical hardware: anodized panels, solder mask, exposed
+   copper pads, silkscreen labels, logic-analyzer traces. Colors and radii
+   are derived from that world, not from generic "cyber neon".
+   ========================================================================== */
+
+:root {
+  /* Panel substrate — a deep blue-black, the colour of solder mask under
+     bench light, rather than pure #000. */
+  --ink: #07090b;
+  --board: #0d1013;
+  --rail: #14181d;
+  --edge: #1e242b;
+  --edge-strong: #2b333c;
+
+  /* Signal yellow: reserved for anything LIVE — the clock, coins, the
+     active objective. Never used as plain decoration. */
+  --signal: #ffd81f;
+  --signal-dim: #8a7513;
+
+  /* Exposed copper: the physical-world marker (hardware kit, designators). */
+  --copper: #c9793c;
+
+  /* State colours. */
+  --verified: #3dd68c;
+  --breach: #ff5a45;
+
+  --background: var(--ink);
+  --foreground: #f2f4f6;
+  --card: var(--board);
+  --card-foreground: #f2f4f6;
+  --popover: #10141a;
+  --popover-foreground: #f2f4f6;
+  --primary: var(--signal);
+  --primary-foreground: #07090b;
+  --secondary: var(--rail);
+  --secondary-foreground: #f2f4f6;
+  --muted: var(--rail);
+  --muted-foreground: #8b949e;
+  --accent: var(--rail);
+  --accent-foreground: var(--signal);
+  --destructive: var(--breach);
+  --destructive-foreground: #07090b;
+  --border: var(--edge);
+  --input: var(--edge);
+  --ring: var(--signal);
+
+  --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Machined, not pillowy. Hardware has chamfers, not bubbles. */
+  --radius: 0.5rem;
+
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 12px 32px -18px rgb(0 0 0 / 0.9);
+  --shadow-lift: 0 1px 0 0 rgb(255 255 255 / 0.05) inset, 0 20px 48px -20px rgb(0 0 0 / 0.95);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-ink: var(--ink);
+  --color-board: var(--board);
+  --color-rail: var(--rail);
+  --color-edge: var(--edge);
+  --color-edge-strong: var(--edge-strong);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-copper: var(--copper);
+  --color-verified: var(--verified);
+  --color-breach: var(--breach);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+
+  --shadow-panel: var(--shadow-panel);
+  --shadow-lift: var(--shadow-lift);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Faint orthogonal trace grid — the board under everything. Kept at a
+       level you feel rather than read. */
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.018) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-attachment: fixed;
+  }
+
+  /* Numbers that never jitter: clocks, coin counts, ranks. */
+  .font-mono,
+  [class*="tabular"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--signal);
+    color: var(--ink);
+  }
+}
+
+@layer components {
+  /* Silkscreen label — the small uppercase text printed on a board next to
+     a component. Used for every panel heading and field label. */
+  .silkscreen {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* A machined panel: flat face, hairline edge, inset top highlight. */
+  .panel {
+    background: var(--board);
+    border: 1px solid var(--edge);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-panel);
+  }
+
+  /* Data chip — the small readout tiles (coins, solves, rank). */
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    border-radius: 2px;
+    border: 1px solid var(--edge-strong);
+    background: var(--rail);
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Copper pad row — the connector strip along a module edge. */
+  .pads {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--copper) 0 5px,
+      transparent 5px 12px
+    );
+    opacity: 0.55;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes signal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.animate-signal-blink {
+  animation: signal-blink 1.6s steps(1, end) infinite;
+}
+
+/* Alert-dialog enter/exit. Defined here rather than pulling in an animation
+   plugin for two transitions. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes dialog-out {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.97); }
+}
+
+.animate-overlay-in { animation: overlay-in 150ms ease-out; }
+.animate-overlay-out { animation: overlay-out 120ms ease-in; }
+.animate-dialog-in { animation: dialog-in 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-dialog-out { animation: dialog-out 120ms ease-in; }
+
+/* Logic-analyzer sweep across the locked panels. */
+@keyframes sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.animate-sweep {
+  animation: sweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
