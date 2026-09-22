@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
-import { query } from "@/lib/db";
+import { query, pool } from "@/lib/db";
 import { getAdminSession } from "@/lib/auth";
+
+const DEFAULT_DURATION_SECONDS = 2700; // 45 minutes
 
 export async function GET() {
   try {
@@ -8,8 +10,8 @@ export async function GET() {
     if (res.rows.length === 0) {
       return NextResponse.json({
         status: "PENDING",
-        duration_seconds: 1800,
-        time_remaining_seconds: 1800,
+        duration_seconds: DEFAULT_DURATION_SECONDS,
+        time_remaining_seconds: DEFAULT_DURATION_SECONDS,
       });
     }
 
@@ -72,7 +74,9 @@ export async function POST(req: NextRequest) {
     const current = currentRes.rows[0];
 
     if (action === "start") {
-      const duration = body?.durationMinutes ? Number(body.durationMinutes) * 60 : 1800; // default 30 mins
+      const rawMinutes = body?.durationMinutes !== undefined ? Number(body.durationMinutes) : 45;
+      const durationMinutes = isNaN(rawMinutes) ? 45 : Math.max(1, Math.min(240, rawMinutes));
+      const duration = durationMinutes * 60;
       const startTime = new Date();
       const endTime = new Date(startTime.getTime() + duration * 1000);
       await query(
@@ -85,11 +89,13 @@ export async function POST(req: NextRequest) {
          WHERE id = 1`,
         [duration, startTime, endTime]
       );
-      return NextResponse.json({ success: true, message: `CTF started! Timer running for ${duration / 60} minutes.` });
+      return NextResponse.json({
+        success: true,
+        message: `CTF started! Timer running for ${durationMinutes} minutes.`,
+      });
     }
 
     if (action === "pause") {
-      // Calculate remaining
       let remaining = 0;
       if (current.end_time) {
         remaining = Math.max(0, Math.floor((new Date(current.end_time).getTime() - Date.now()) / 1000));
@@ -106,7 +112,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "resume") {
-      const remaining = current.duration_seconds || 1800;
+      const remaining = current.duration_seconds ?? DEFAULT_DURATION_SECONDS;
+      if (remaining <= 0) {
+        await query(
+          `UPDATE contest_state SET status = 'ENDED', updated_at = NOW() WHERE id = 1`
+        );
+        return NextResponse.json({ success: true, message: "Contest time has already elapsed." });
+      }
       const endTime = new Date(Date.now() + remaining * 1000);
       await query(
         `UPDATE contest_state 
@@ -120,16 +132,45 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "extend") {
-      const extendMinutes = body?.minutes ? Number(body.minutes) : 5;
-      const baseTime = current.end_time ? new Date(current.end_time).getTime() : Date.now();
-      const newEndTime = new Date(Math.max(baseTime, Date.now()) + extendMinutes * 60 * 1000);
+      const rawMinutes = body?.minutes !== undefined ? Number(body.minutes) : 5;
+      const extendMinutes = isNaN(rawMinutes) ? 5 : Math.max(1, Math.min(120, rawMinutes));
+
+      if (current.status === "PAUSED") {
+        // Paused contest: extend the stored remaining seconds without losing the paused time
+        const newRemaining = (current.duration_seconds ?? 0) + extendMinutes * 60;
+        await query(
+          `UPDATE contest_state 
+           SET duration_seconds = $1,
+               updated_at = NOW()
+           WHERE id = 1`,
+          [newRemaining]
+        );
+        return NextResponse.json({
+          success: true,
+          message: `Extended paused CTF by ${extendMinutes} minutes. Remaining: ${Math.round(newRemaining / 60)} mins.`,
+        });
+      }
+
+      // Running or Ended contest: compute end_time extending from current end_time or now
+      const baseTime = current.end_time && current.status === "RUNNING"
+        ? Math.max(new Date(current.end_time).getTime(), Date.now())
+        : Date.now();
+      const newEndTime = new Date(baseTime + extendMinutes * 60 * 1000);
+      const calculatedDuration = current.start_time
+        ? Math.max(
+            current.duration_seconds || DEFAULT_DURATION_SECONDS,
+            Math.round((newEndTime.getTime() - new Date(current.start_time).getTime()) / 1000)
+          )
+        : (current.duration_seconds || DEFAULT_DURATION_SECONDS) + extendMinutes * 60;
+
       await query(
         `UPDATE contest_state 
          SET status = 'RUNNING',
              end_time = $1,
+             duration_seconds = $2,
              updated_at = NOW()
          WHERE id = 1`,
-        [newEndTime]
+        [newEndTime, calculatedDuration]
       );
       return NextResponse.json({ success: true, message: `Extended CTF by ${extendMinutes} minutes.` });
     }
@@ -147,19 +188,30 @@ export async function POST(req: NextRequest) {
 
     if (action === "reset") {
       const clearSubmissions = body?.clearSubmissions === true;
-      await query(
-        `UPDATE contest_state 
-         SET status = 'PENDING',
-             duration_seconds = 1800,
-             start_time = NULL,
-             end_time = NULL,
-             updated_at = NOW()
-         WHERE id = 1`
-      );
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `UPDATE contest_state 
+           SET status = 'PENDING',
+               duration_seconds = $1,
+               start_time = NULL,
+               end_time = NULL,
+               updated_at = NOW()
+           WHERE id = 1`,
+          [DEFAULT_DURATION_SECONDS]
+        );
 
-      if (clearSubmissions) {
-        await query("DELETE FROM submissions");
-        await query("UPDATE teams SET score = 0, last_submission_at = NULL");
+        if (clearSubmissions) {
+          await client.query("DELETE FROM submissions");
+          await client.query("UPDATE teams SET score = 0, last_submission_at = NULL");
+        }
+        await client.query("COMMIT");
+      } catch (e) {
+        await client.query("ROLLBACK");
+        throw e;
+      } finally {
+        client.release();
       }
 
       return NextResponse.json({

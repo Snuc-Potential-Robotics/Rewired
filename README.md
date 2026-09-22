@@ -147,7 +147,7 @@ pnpm start -p 3000
 Run the end-to-end test suite to verify registration, rate limiting, flag validation, clock synchronization, and leaderboard mechanics:
 
 ```bash
-npx tsx scripts/test-e2e.ts
+ALLOW_DESTRUCTIVE_TESTS=true npx tsx scripts/test-e2e.ts
 ```
 
 ---

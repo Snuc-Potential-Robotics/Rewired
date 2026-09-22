@@ -17,10 +17,14 @@ export async function GET() {
         t.score,
         t.last_submission_at,
         t.created_at,
-        COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count
+        COALESCE(s.solves_count, 0) as solves_count
       FROM teams t
-      LEFT JOIN submissions s ON t.id = s.team_id
-      GROUP BY t.id
+      LEFT JOIN (
+        SELECT team_id, COUNT(*) as solves_count
+        FROM submissions
+        WHERE is_correct = TRUE
+        GROUP BY team_id
+      ) s ON t.id = s.team_id
       ORDER BY t.score DESC, t.name ASC
     `);
 

@@ -30,6 +30,12 @@ export default function LeaderboardPage() {
   const { team, setTeam, refresh: refreshTeam } = useTeamSession();
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"register" | "login">("register");
+
+  const openAuth = (mode: "register" | "login" = "register") => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
   const [teams, setTeams] = useState<RankedTeam[]>([]);
   const [stats, setStats] = useState({ totalTeams: 0, totalSolves: 0, totalChallenges: 0 });
   const [loading, setLoading] = useState(true);
@@ -87,7 +93,7 @@ export default function LeaderboardPage() {
         remaining={contest.remaining}
         duration={contest.duration}
         loaded={contest.loaded}
-        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenAuth={openAuth}
         onLogout={async () => {
           await fetch("/api/auth/team/logout", { method: "POST" });
           setTeam(null);
@@ -275,9 +281,9 @@ export default function LeaderboardPage() {
                             ? "Check the spelling, or clear the search to see everyone."
                             : "Register a team and you will be the first name here."}
                         </p>
-                        {!search && !team && (
+                        {!search && !team && contest.status !== "ENDED" && (
                           <button
-                            onClick={() => setAuthModalOpen(true)}
+                            onClick={() => openAuth("register")}
                             className="mt-5 rounded-md bg-signal px-4 py-2.5 font-display text-[13px] font-semibold text-ink transition-colors hover:bg-signal/85"
                           >
                             Register a team
@@ -294,8 +300,9 @@ export default function LeaderboardPage() {
       </main>
 
       <AuthModal
-        key={String(authModalOpen)}
+        key={`${authModalOpen}-${authMode}`}
         isOpen={authModalOpen}
+        initialMode={authMode}
         onClose={() => setAuthModalOpen(false)}
         onSuccess={(loggedTeam) => {
           setTeam(loggedTeam);

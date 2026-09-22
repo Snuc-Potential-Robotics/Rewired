@@ -1,8 +1,15 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const secretKey = process.env.JWT_SECRET || "rewired_super_secret_jwt_key_2026_snuc_robotics_ctf";
-const encodedKey = new TextEncoder().encode(secretKey);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(
+      "JWT_SECRET environment variable is missing. A secure random secret is required to sign and verify tokens."
+    );
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export interface TeamSession {
   teamId: number;
@@ -20,12 +27,12 @@ export async function createTeamToken(payload: TeamSession): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(encodedKey);
+    .sign(getJwtSecret());
 }
 
 export async function verifyTeamToken(token: string): Promise<TeamSession | null> {
   try {
-    const { payload } = await jwtVerify(token, encodedKey);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     if (payload.role !== "team") return null;
     return {
       teamId: payload.teamId as number,
@@ -42,12 +49,12 @@ export async function createAdminToken(payload: AdminSession): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
-    .sign(encodedKey);
+    .sign(getJwtSecret());
 }
 
 export async function verifyAdminToken(token: string): Promise<AdminSession | null> {
   try {
-    const { payload } = await jwtVerify(token, encodedKey);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     if (payload.role !== "admin") return null;
     return {
       email: payload.email as string,

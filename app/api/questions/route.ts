@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { query } from "@/lib/db";
 import { getAdminSession, getTeamSession } from "@/lib/auth";
+import { calculateDynamicPoints } from "@/lib/scoring";
 
 export async function GET() {
   try {
@@ -8,8 +9,13 @@ export async function GET() {
     const team = await getTeamSession();
 
     // Check contest state
-    const contestRes = await query("SELECT status FROM contest_state WHERE id = 1");
-    const contestStatus = contestRes.rows[0]?.status || "PENDING";
+    const contestRes = await query("SELECT status, duration_seconds, end_time FROM contest_state WHERE id = 1");
+    const contestRow = contestRes.rows[0];
+    const contestStatus = contestRow?.status || "PENDING";
+    const nowMs = Date.now();
+    const endMs = contestRow?.end_time ? new Date(contestRow.end_time).getTime() : nowMs;
+    const timeRemainingSeconds = Math.max(0, Math.floor((endMs - nowMs) / 1000));
+    const totalDurationSeconds = contestRow?.duration_seconds || 2700;
 
     if (admin) {
       // Admin sees everything, including real flags and solve statistics
@@ -55,6 +61,8 @@ export async function GET() {
         title: `Challenge #${idx + 1} [LOCKED]`,
         category: q.category,
         points: q.points,
+        current_points: q.points,
+        isFirstBloodAvailable: true,
         description: "Challenge payload encrypted. Decryption key will be dispatched upon event launch.",
         hint: null,
         order_index: q.order_index,
@@ -69,38 +77,57 @@ export async function GET() {
       });
     }
 
-    // Contest is RUNNING or ENDED
-    const qRes = await query(`
-      SELECT 
-        q.id,
-        q.title,
-        q.category,
+    // Contest is RUNNING or ENDED: Fetch active questions and team solves in parallel
+    const [qRes, solvedRes] = await Promise.all([
+      query(`
+        SELECT 
+          q.id,
+          q.title,
+          q.category,
+          q.points,
+          q.description,
+          q.hint,
+          q.order_index,
+          COALESCE(sc.solves_count, 0) as solves_count
+        FROM questions q
+        LEFT JOIN (
+          SELECT question_id, COUNT(*) as solves_count
+          FROM submissions
+          WHERE is_correct = TRUE
+          GROUP BY question_id
+        ) sc ON q.id = sc.question_id
+        WHERE q.is_active = TRUE
+        ORDER BY q.order_index ASC, q.id ASC
+      `),
+      team
+        ? query<{ question_id: number }>(
+            "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
+            [team.teamId]
+          )
+        : Promise.resolve({ rows: [] }),
+    ]);
+
+    const solvedSet = new Set<number>(solvedRes.rows.map((r) => r.question_id));
+
+    const sanitizedQuestions = qRes.rows.map((q) => {
+      const solvesCount = Number(q.solves_count || 0);
+      const nextSolveRank = solvesCount + 1;
+      const dynamic = calculateDynamicPoints(
         q.points,
-        q.description,
-        q.hint,
-        q.order_index,
-        COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count
-      FROM questions q
-      LEFT JOIN submissions s ON q.id = s.question_id
-      WHERE q.is_active = TRUE
-      GROUP BY q.id
-      ORDER BY q.order_index ASC, q.id ASC
-    `);
-
-    let solvedSet = new Set<number>();
-    if (team) {
-      const solvedRes = await query(
-        "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
-        [team.teamId]
+        nextSolveRank,
+        timeRemainingSeconds,
+        totalDurationSeconds
       );
-      solvedSet = new Set(solvedRes.rows.map((r) => r.question_id));
-    }
 
-    const sanitizedQuestions = qRes.rows.map((q) => ({
-      ...q,
-      isSolved: solvedSet.has(q.id),
-      isLocked: false,
-    }));
+      return {
+        ...q,
+        solves_count: solvesCount,
+        current_points: dynamic.awardedPoints,
+        isFirstBloodAvailable: nextSolveRank === 1,
+        isSolved: solvedSet.has(q.id),
+        isLocked: false,
+      };
+    });
 
     return NextResponse.json({
       questions: sanitizedQuestions,
@@ -133,6 +160,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const numPoints = Number(points);
+    if (isNaN(numPoints) || numPoints <= 0 || numPoints > 10000) {
+      return NextResponse.json(
+        { error: "Points must be a positive number between 1 and 10,000." },
+        { status: 400 }
+      );
+    }
+
     const res = await query(
       `INSERT INTO questions (title, category, points, description, flag, hint, order_index, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
@@ -140,7 +175,7 @@ export async function POST(req: NextRequest) {
       [
         title.trim(),
         category.trim(),
-        Number(points),
+        numPoints,
         description.trim(),
         flag.trim(),
         hint ? hint.trim() : null,
@@ -173,6 +208,21 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
     }
 
+    let numPoints: number | null = null;
+    if (points !== undefined) {
+      numPoints = Number(points);
+      if (isNaN(numPoints) || numPoints <= 0 || numPoints > 10000) {
+        return NextResponse.json(
+          { error: "Points must be a positive number between 1 and 10,000." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Support explicitly clearing hint by passing empty string or null
+    const hintProvided = hint !== undefined;
+    const cleanHint = hint && typeof hint === "string" && hint.trim().length > 0 ? hint.trim() : null;
+
     const res = await query(
       `UPDATE questions
        SET title = COALESCE($1, title),
@@ -180,18 +230,19 @@ export async function PUT(req: NextRequest) {
            points = COALESCE($3, points),
            description = COALESCE($4, description),
            flag = COALESCE($5, flag),
-           hint = COALESCE($6, hint),
-           order_index = COALESCE($7, order_index),
-           is_active = COALESCE($8, is_active)
-       WHERE id = $9
+           hint = CASE WHEN $6 = TRUE THEN $7 ELSE hint END,
+           order_index = COALESCE($8, order_index),
+           is_active = COALESCE($9, is_active)
+       WHERE id = $10
        RETURNING *`,
       [
-        title?.trim(),
-        category?.trim(),
-        points !== undefined ? Number(points) : null,
-        description?.trim(),
-        flag?.trim(),
-        hint !== undefined ? (hint ? hint.trim() : null) : null,
+        title?.trim() || null,
+        category?.trim() || null,
+        numPoints,
+        description?.trim() || null,
+        flag?.trim() || null,
+        hintProvided,
+        cleanHint,
         order_index !== undefined ? Number(order_index) : null,
         is_active !== undefined ? Boolean(is_active) : null,
         Number(id),
@@ -224,7 +275,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
+      return NextResponse.json({ error: "Challenge ID required." }, { status: 400 });
     }
 
     await query("DELETE FROM questions WHERE id = $1", [Number(id)]);

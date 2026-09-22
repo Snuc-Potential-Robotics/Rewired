@@ -11,6 +11,8 @@ export interface QuestionItem {
   title: string;
   category: string;
   points: number;
+  current_points?: number;
+  isFirstBloodAvailable?: boolean;
   description: string;
   hint?: string | null;
   order_index: number;
@@ -101,7 +103,7 @@ export function ChallengeModal({
 
       if (data.isCorrect) {
         toast(data.message, "success", "Flag captured");
-        onSolvedSuccess(question.id, question.points, data.newScore);
+        onSolvedSuccess(question.id, data.pointsAwarded ?? question.points, data.newScore);
       } else {
         toast("That flag is wrong. Check your capture and try again.", "error");
         setCooldown(4);
@@ -133,7 +135,7 @@ export function ChallengeModal({
         {/* Header */}
         <header className="flex items-start justify-between gap-4 border-b border-edge bg-rail/40 px-6 py-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="silkscreen">{question.category}</span>
               <span aria-hidden className="h-2.5 w-px bg-edge-strong" />
               <span
@@ -141,8 +143,18 @@ export function ChallengeModal({
                   solved ? "text-verified" : "text-signal"
                 }`}
               >
-                {question.points} coins
+                {question.current_points ?? question.points} coins
+                {question.current_points && question.current_points !== question.points && (
+                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+                    (Base: {question.points})
+                  </span>
+                )}
               </span>
+              {question.isFirstBloodAvailable && !solved && (
+                <span className="chip flex items-center gap-1 border-signal/40 bg-signal/10 text-signal text-[10px]">
+                  🩸 First Blood (100%)
+                </span>
+              )}
               {solved && (
                 <span className="chip flex items-center gap-1 border-verified/40 text-verified">
                   <Check className="h-3 w-3" />
@@ -212,6 +224,10 @@ export function ChallengeModal({
             <Banner tone="signal" icon={<Lock className="h-4 w-4" />} title="Not started yet">
               An organiser starts the clock. Submissions open the moment they do.
             </Banner>
+          ) : contestStatus === "PAUSED" ? (
+            <Banner tone="muted" icon={<Lock className="h-4 w-4" />} title="Contest is paused">
+              The competition clock is currently paused by administrators. Flag submissions will resume when the contest is unpaused.
+            </Banner>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="silkscreen">Submit the flag</div>
@@ -263,7 +279,7 @@ export function ChallengeModal({
               </div>
 
               <p className="font-mono text-[11px] text-muted-foreground">
-                Format: flag&#123;answer&#125; &nbsp;·&nbsp; wrong answers cost 4 seconds
+                Format: flag&#123;answer&#125; &nbsp;·&nbsp; Dynamic scoring: 1st solve gets 100%, 2nd gets 90%, 3rd gets 80% + clock speed bonus
               </p>
             </form>
           )}

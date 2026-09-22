@@ -58,7 +58,7 @@ export function ObjectiveCard({ question, index, locked, onOpen }: ObjectiveCard
             solved ? "text-verified" : "text-signal"
           }`}
         >
-          {question.points}
+          {question.current_points ?? question.points}
           <span className="ml-1 text-[10px] font-medium text-muted-foreground">coins</span>
         </span>
       </div>
@@ -79,9 +79,16 @@ export function ObjectiveCard({ question, index, locked, onOpen }: ObjectiveCard
 
       {/* Footer */}
       <div className="flex items-center justify-between gap-3 border-t border-edge px-5 py-3">
-        <span className="font-mono text-[11px] text-muted-foreground">
-          {Number(question.solves_count ?? 0)} team
-          {Number(question.solves_count ?? 0) === 1 ? "" : "s"} solved
+        <span className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+          {question.isFirstBloodAvailable && !solved && !locked && (
+            <span className="inline-block rounded-xs bg-signal/15 px-1 py-0.5 text-[9px] font-semibold uppercase text-signal">
+              First Blood
+            </span>
+          )}
+          <span>
+            {Number(question.solves_count ?? 0)} team
+            {Number(question.solves_count ?? 0) === 1 ? "" : "s"} solved
+          </span>
         </span>
 
         <span

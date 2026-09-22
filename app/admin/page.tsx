@@ -34,6 +34,7 @@ import {
 import { useToast } from "@/components/Toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import Link from "next/link";
+import type { OrganizerGuideData } from "@/app/api/admin/guide/route";
 
 interface AdminContestState {
   status: string;
@@ -90,7 +91,7 @@ export default function AdminPage() {
 
   // Contest State
   const [contest, setContest] = useState<AdminContestState | null>(null);
-  const [customDurationMinutes, setCustomDurationMinutes] = useState(30);
+  const [customDurationMinutes, setCustomDurationMinutes] = useState(45);
 
   // Questions State
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
@@ -118,6 +119,24 @@ export default function AdminPage() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetClearsScores, setResetClearsScores] = useState(false);
 
+  // Authenticated Organizer Guide data (fetched from server to avoid leaking secrets in client bundle)
+  const [guideData, setGuideData] = useState<OrganizerGuideData | null>(null);
+  const [guideLoading, setGuideLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "guide" && !guideData && !guideLoading && isAdmin) {
+      setGuideLoading(true);
+      fetch("/api/admin/guide")
+        .then((res) => {
+          if (!res.ok) throw new Error("Unauthorized");
+          return res.json();
+        })
+        .then((data: OrganizerGuideData) => setGuideData(data))
+        .catch((err) => console.error("Failed to load organizer guide:", err))
+        .finally(() => setGuideLoading(false));
+    }
+  }, [activeTab, guideData, guideLoading, isAdmin]);
+
   // 1. Verify Admin Session
   const checkAdminAuth = useCallback(async () => {
     try {
@@ -137,34 +156,30 @@ export default function AdminPage() {
     checkAdminAuth();
   }, [checkAdminAuth]);
 
-  // 2. Fetch Contest, Questions, Submissions, Teams
+  // 2. Fetch Contest, Questions, Submissions, Teams in parallel
   const fetchAllData = useCallback(async () => {
     if (!isAdmin) return;
 
     try {
-      // Contest
-      const cRes = await fetch("/api/contest");
+      const [cRes, qRes, sRes, tRes] = await Promise.all([
+        fetch("/api/contest", { cache: "no-store" }),
+        fetch("/api/questions", { cache: "no-store" }),
+        fetch("/api/admin/submissions", { cache: "no-store" }),
+        fetch("/api/admin/teams", { cache: "no-store" }),
+      ]);
+
       if (cRes.ok) {
         const cData = await cRes.json();
         setContest(cData);
       }
-
-      // Questions
-      const qRes = await fetch("/api/questions");
       if (qRes.ok) {
         const qData = await qRes.json();
         setQuestions(qData.questions || []);
       }
-
-      // Submissions
-      const sRes = await fetch("/api/admin/submissions");
       if (sRes.ok) {
         const sData = await sRes.json();
         setSubmissions(sData.submissions || []);
       }
-
-      // Teams
-      const tRes = await fetch("/api/admin/teams");
       if (tRes.ok) {
         const tData = await tRes.json();
         setTeams(tData.teams || []);
@@ -489,7 +504,7 @@ export default function AdminPage() {
                 Remaining Time
               </div>
               <div className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-primary">
-                {contest ? formatTimerDisplay(contest.time_remaining_seconds) : "30:00"}
+                {contest ? formatTimerDisplay(contest.time_remaining_seconds) : "45:00"}
               </div>
               <div className="text-[10px] text-muted-foreground font-mono mt-1">
                 {contest?.status === "RUNNING"
@@ -521,8 +536,8 @@ export default function AdminPage() {
                     className="bg-card border border-border rounded-lg px-2 py-1 text-foreground font-mono"
                   >
                     <option value={15}>15 mins</option>
-                    <option value={30}>30 mins (Standard)</option>
-                    <option value={45}>45 mins</option>
+                    <option value={30}>30 mins</option>
+                    <option value={45}>45 mins (Standard)</option>
                     <option value={60}>60 mins</option>
                   </select>
                 </div>
@@ -765,191 +780,172 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* TAB: ORGANIZER SECRET GUIDE (NOT FOR PARTICIPANTS) */}
+        {/* TAB: ORGANIZER SECRET GUIDE (SERVER-AUTHENTICATED ONLY) */}
         {activeTab === "guide" && (
           <div className="space-y-6">
-            <div className="rounded-2xl border-2 border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 space-y-3">
-              <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-bold uppercase tracking-wider">
-                <Lock className="w-4 h-4" />
-                STRICTLY CONFIDENTIAL • ORGANIZER MASTER SHEET • DO NOT SHARE WITH PARTICIPANTS
+            {guideLoading ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground font-mono space-y-3">
+                <Activity className="w-6 h-6 animate-spin text-primary" />
+                <p className="text-xs">Fetching confidential organizer master sheet from secure server...</p>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black font-mono tracking-tight text-foreground">
-                Air-Gap Server Room Breach — Attack Vectors & Orchestration Guide
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                This document contains the ground truth attack vectors, hardware execution paths, credential locations, and the official 10-minute hint release schedule for organizers and proctors.
-              </p>
-            </div>
-
-            {/* 3-Phase Ground Truth Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {/* Phase 1 Truth */}
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-1 bg-amber-400" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400">
-                    PHASE 1 DEBRIEF
-                  </span>
-                  <span className="text-xs font-mono font-bold text-primary">150 COINS</span>
-                </div>
-                <h4 className="font-bold text-sm text-foreground font-mono">
-                  Username Extraction: BLE Raw Data
-                </h4>
-                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-                  <p>
-                    <strong className="text-foreground">Mechanism:</strong> The target dropped his company-issued wireless earphones in the lobby.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Ground Truth:</strong> The username is printed in the <span className="text-amber-400 font-semibold">raw BLE advertisement data</span> of the wireless device.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Solution Method:</strong> Teams must use an ESP32 (BLE scanner sketch) or mobile BLE packet analyzer to inspect advertising payload packets and extract the embedded username.
-                  </p>
-                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
-                    Flag: <code className="text-primary font-bold">flag&#123;sysadmin_ble_airgap_user&#125;</code>
+            ) : !guideData ? (
+              <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center space-y-3">
+                <AlertTriangle className="w-8 h-8 text-destructive mx-auto" />
+                <h4 className="text-sm font-bold text-foreground font-mono">Unable to load organizer guide</h4>
+                <p className="text-xs text-muted-foreground">Admin authentication required to access this endpoint.</p>
+                <button
+                  onClick={() => {
+                    setGuideLoading(true);
+                    fetch("/api/admin/guide")
+                      .then((res) => {
+                        if (!res.ok) throw new Error("Unauthorized");
+                        return res.json();
+                      })
+                      .then((data) => setGuideData(data))
+                      .catch((err) => console.error("Retry guide load error:", err))
+                      .finally(() => setGuideLoading(false));
+                  }}
+                  className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs"
+                >
+                  Retry Loading
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-2xl border-2 border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-bold uppercase tracking-wider">
+                    <Lock className="w-4 h-4" />
+                    {guideData.confidentialNotice}
                   </div>
+                  <h3 className="text-xl sm:text-2xl font-black font-mono tracking-tight text-foreground">
+                    {guideData.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {guideData.subtitle}
+                  </p>
                 </div>
-              </div>
 
-              {/* Phase 2 Truth */}
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-1 bg-primary" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                    PHASE 2 DEBRIEF
-                  </span>
-                  <span className="text-xs font-mono font-bold text-primary">200 COINS</span>
+                {/* 3-Phase Ground Truth Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {guideData.phases.map((p, idx) => {
+                    const borderColors = ["bg-amber-400", "bg-primary", "bg-emerald-400"];
+                    const badgeColors = [
+                      "bg-amber-400/20 text-amber-400",
+                      "bg-primary/20 text-primary",
+                      "bg-emerald-400/20 text-emerald-400",
+                    ];
+                    return (
+                      <div
+                        key={p.phase}
+                        className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden"
+                      >
+                        <div className={`absolute top-0 inset-x-0 h-1 ${borderColors[idx % 3]}`} />
+                        <div className="flex items-center justify-between">
+                          <span
+                            className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                              badgeColors[idx % 3]
+                            }`}
+                          >
+                            PHASE {p.phase} DEBRIEF
+                          </span>
+                          <span className="text-xs font-mono font-bold text-primary">
+                            {p.points} COINS
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-foreground font-mono">
+                          {p.title}
+                        </h4>
+                        <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+                          <p>
+                            <strong className="text-foreground">Mechanism:</strong> {p.mechanism}
+                          </p>
+                          <p>
+                            <strong className="text-foreground">Ground Truth:</strong> {p.groundTruth}
+                          </p>
+                          <p>
+                            <strong className="text-foreground">Solution Method:</strong>{" "}
+                            {p.solutionMethod}
+                          </p>
+                          {p.organizerAction && (
+                            <p>
+                              <strong className="text-foreground">Organizer Action:</strong>{" "}
+                              {p.organizerAction}
+                            </p>
+                          )}
+                          <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
+                            Flag: <code className="text-primary font-bold">{p.flag}</code>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <h4 className="font-bold text-sm text-foreground font-mono">
-                  Password: RC522 RFID + Laptop Update
-                </h4>
-                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-                  <p>
-                    <strong className="text-foreground">Mechanism:</strong> Sysadmin left his physical RFID access badge on the desk.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Ground Truth:</strong> The team must read the physical access card using an <span className="text-primary font-semibold">RC522 RFID reader and an ESP32</span>.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Organizer Action:</strong> After obtaining the credentials from the RFID card, teams <span className="text-amber-400 font-semibold">must go to the organizers&apos; laptop to update them</span> and verify access.
-                  </p>
-                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
-                    Flag: <code className="text-primary font-bold">flag&#123;rfid_rc522_esp32_badge_cloned&#125;</code>
-                  </div>
-                </div>
-              </div>
 
-              {/* Phase 3 Truth */}
-              <div className="rounded-2xl border border-border bg-card p-5 space-y-3 relative overflow-hidden">
-                <div className="absolute top-0 inset-x-0 h-1 bg-emerald-400" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-400">
-                    PHASE 3 DEBRIEF
-                  </span>
-                  <span className="text-xs font-mono font-bold text-primary">250 COINS</span>
-                </div>
-                <h4 className="font-bold text-sm text-foreground font-mono">
-                  Master-Slave Authentication Key Intercept
-                </h4>
-                <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
-                  <p>
-                    <strong className="text-foreground">Mechanism:</strong> Server room system is air-gapped from traditional Ethernet/WAN.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Ground Truth:</strong> The authentication key is <span className="text-emerald-400 font-semibold">transmitted from the master system to other slave systems</span>.
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Solution Method:</strong> Teams must intercept/sniff this key transmission between the master ESP32 and slave node to compromise the full system.
-                  </p>
-                  <div className="p-2.5 rounded-xl bg-secondary/70 border border-border font-mono text-[11px] text-foreground">
-                    Flag: <code className="text-primary font-bold">flag&#123;master_slave_airgap_compromised_2026&#125;</code>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Hint Schedule & Equipment Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Hint Schedule */}
-              <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
-                  <Clock className="w-4 h-4 text-primary" />
-                  HINTS RELEASE SCHEDULE (10-MINUTE INTERVALS)
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Hints must be released every 10 minutes to guide teams through hardware bottlenecks without spoiling flags:
-                </p>
-
-                <div className="space-y-3 font-mono text-xs">
-                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
-                    <div className="flex items-center justify-between text-amber-400 font-bold text-[11px]">
-                      <span>MINUTE 10:00 (T+10)</span>
-                      <span>Phase 1 Hint</span>
+                {/* Hint Schedule & Equipment Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Hint Schedule */}
+                  <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
+                      <Clock className="w-4 h-4 text-primary" />
+                      HINTS RELEASE SCHEDULE (10-MINUTE INTERVALS)
                     </div>
-                    <p className="text-[11px] text-foreground font-sans">
-                      &quot;Inspect raw BLE advertising packets. Earphones broadcast identification metadata inside custom manufacturer data and complete local name attributes.&quot;
+                    <p className="text-xs text-muted-foreground">
+                      Hints must be released every 10 minutes to guide teams through hardware bottlenecks without spoiling flags:
                     </p>
+
+                    <div className="space-y-3 font-mono text-xs">
+                      {guideData.hintSchedule.map((h, i) => {
+                        const hintColors = ["text-amber-400", "text-primary", "text-emerald-400"];
+                        return (
+                          <div
+                            key={i}
+                            className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1"
+                          >
+                            <div className={`flex items-center justify-between font-bold text-[11px] ${hintColors[i % 3]}`}>
+                              <span>{h.minute}</span>
+                              <span>{h.label}</span>
+                            </div>
+                            <p className="text-[11px] text-foreground font-sans">
+                              &quot;{h.hint}&quot;
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
-                    <div className="flex items-center justify-between text-primary font-bold text-[11px]">
-                      <span>MINUTE 20:00 (T+20)</span>
-                      <span>Phase 2 Hint</span>
+                  {/* Equipment / Components Needed */}
+                  <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
+                      <Cpu className="w-4 h-4 text-primary" />
+                      EQUIPMENT / HARDWARE MASTER CHECKLIST
                     </div>
-                    <p className="text-[11px] text-foreground font-sans">
-                      &quot;Wire RC522 SPI bus (SDA, SCK, MOSI, MISO, RST) to ESP32. Read the UID and memory blocks from the card, then report to the organizer laptop station to authenticate.&quot;
+                    <p className="text-xs text-muted-foreground">
+                      Physical gear required for deploying and maintaining the competition environment:
                     </p>
-                  </div>
 
-                  <div className="p-3 rounded-xl bg-secondary/60 border border-border space-y-1">
-                    <div className="flex items-center justify-between text-emerald-400 font-bold text-[11px]">
-                      <span>MINUTE 30:00 (T+30)</span>
-                      <span>Phase 3 Hint</span>
+                    <div className="space-y-3">
+                      {guideData.equipmentChecklist.map((ec, i) => (
+                        <div
+                          key={i}
+                          className="p-3.5 rounded-xl bg-secondary/60 border border-border space-y-2"
+                        >
+                          <div className={`text-xs font-bold font-mono flex items-center gap-2 ${i === 0 ? "text-primary" : "text-amber-400"}`}>
+                            {i === 0 ? <Users className="w-3.5 h-3.5" /> : <Terminal className="w-3.5 h-3.5" />}
+                            {ec.category}
+                          </div>
+                          <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc font-mono">
+                            {ec.items.map((item, j) => (
+                              <li key={j}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-[11px] text-foreground font-sans">
-                      &quot;The Master node transmits heartbeats and security tokens to slave nodes. Sniff this communication channel to capture the master auth handshake.&quot;
-                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Equipment / Components Needed */}
-              <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
-                  <Cpu className="w-4 h-4 text-primary" />
-                  EQUIPMENT / HARDWARE MASTER CHECKLIST
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Physical gear required for deploying and maintaining the competition environment:
-                </p>
-
-                <div className="space-y-3">
-                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border space-y-2">
-                    <div className="text-xs font-bold text-primary font-mono flex items-center gap-2">
-                      <Users className="w-3.5 h-3.5" />
-                      1. Hardware Required for Each Team
-                    </div>
-                    <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc font-mono">
-                      <li><strong className="text-foreground">RC522 RFID reader</strong> – 1 unit per team</li>
-                      <li><strong className="text-foreground">ESP32 Development Board</strong> – 1 unit per team</li>
-                      <li><strong className="text-foreground">Breadboard & Connecting Jumper Wires</strong> – As required (Dupont male-to-female / male-to-male)</li>
-                    </ul>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-secondary/60 border border-border space-y-2">
-                    <div className="text-xs font-bold text-amber-400 font-mono flex items-center gap-2">
-                      <Terminal className="w-3.5 h-3.5" />
-                      2. Hardware Required for Competition Environment
-                    </div>
-                    <ul className="text-xs text-muted-foreground space-y-1 pl-4 list-disc font-mono">
-                      <li><strong className="text-foreground">Organizer Laptop</strong> – 1 unit (for verifying & updating credentials)</li>
-                      <li><strong className="text-foreground">ESP Nodes</strong> – 2 units (Master node & Slave system node)</li>
-                      <li><strong className="text-foreground">RFID Tag / Physical Access Card</strong> – 1 unit</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
         )}
 
