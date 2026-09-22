@@ -1,104 +1,97 @@
-# REWIRED — Hardware CTF Platform
+# REWIRED 2026 — Hardware CTF Platform
 
-> **High-Intensity Hardware Capture The Flag & Embedded Security Platform**  
-> Organized by the **SNUC Potential Robotics Club**
+> **High-Intensity Hardware Capture The Flag & Embedded Systems Security Platform**  
+> Organized with pride by the **SNUC Potential Robotics Club**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.3-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![Radix UI](https://img.shields.io/badge/Radix_UI-Components-161618?style=flat&logo=radix-ui)](https://www.radix-ui.com/)
 [![Neon PostgreSQL](https://img.shields.io/badge/Neon-PostgreSQL-00E599?style=flat&logo=postgresql)](https://neon.tech/)
 
 ---
 
 ## ⚡ Overview
 
-**Rewired** is a 30-minute Capture The Flag (CTF) competition engine built specifically for hardware and embedded systems security challenges. Contestants deconstruct microcontrollers, analyze oscilloscope wave captures, sniff UART/I2C/SPI/CAN buses, inspect PCB layers, and exploit embedded interfaces in real time.
+**Rewired** is a specialized 45-minute hardware and embedded security Capture The Flag (CTF) competition engine. Contestants analyze microcontroller pinouts, probe test points, reverse-engineer firmware dumps, sniff UART / SPI / I2C / CAN bus traffic, reconstruct logic-analyzer waveforms, and exploit physical device vulnerabilities in real time.
 
-The platform is designed to effortlessly handle concurrent participants, enforce strict anti-cheat rules, and provide organizers with full real-time control over the contest lifecycle.
+Coins captured during Round 1 serve as the team's official hardware auction budget for Round 2. The platform is engineered for zero-latency live telemetry, synchronized contest clocks, anti-cheat protection, and full organizer command control.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Architecture & Tech Stack
 
-- **Framework**: Next.js 16 (App Router) + React 19
+- **Framework**: Next.js 16 (App Router with Turbopack) & React 19
 - **Language**: TypeScript 5.9 (Strict Type Safety)
-- **Styling**: Tailwind CSS v4 with custom `#ffd81f` amber theme tokens
-- **Database**: Neon Serverless PostgreSQL with connection pooling
-- **Icons**: Lucide React
-- **Animations**: Framer Motion (dynamic leaderboard layout transitions) + Canvas Confetti (podium celebration)
-- **Sessions & Auth**: Edge-compatible JWT cookies via `jose` + `bcryptjs`
+- **Styling**: Tailwind CSS v4 with custom industrial hardware design tokens (copper, phosphor amber `#ffd81f`, verification emerald, breach crimson)
+- **Typography**: Space Grotesk (mechanical display headers), Inter (body prose), JetBrains Mono (monospaced telemetry, clock, access codes)
+- **Database**: Serverless PostgreSQL via Neon with connection pooling (`pg`)
+- **Dialogs & Modals**: Radix UI Primitives (`@radix-ui/react-alert-dialog`, `@radix-ui/react-slot`)
+- **Animations**: Framer Motion for smooth leaderboard layout transitions + Canvas Confetti for podium ceremonies
+- **Authentication & Security**: Edge-compatible JSON Web Tokens via `jose` + `bcryptjs` hashing with sliding-window submission rate limiters
 
 ---
 
-## 🎯 Key Capabilities
+## 🎯 Key Features
 
-### 1. Synchronized 30-Minute Contest Clock
-- Central database-backed contest state singleton (`contest_state`).
-- Live digital countdown timer displayed in the navigation bar for all connected teams.
-- Time remaining turns into an urgent pulsing red alert when under 5 minutes.
-- When the timer hits `00:00`, the contest transitions to `ENDED` and all flag submissions lock immediately.
+### 1. Mission Clock & Live Telemetry Bar
+- **Central Clock Synchronization**: Global database-backed singleton (`contest_state`) queried through the `/api/contest` polling hook.
+- **Mission Phases**: Smooth automated transitions between `PENDING` (pre-launch standby), `RUNNING` (active mission), and `ENDED` (freeze & evaluation).
+- **Urgent Thresholds**: Dynamic visual alerts when remaining mission time dips below 5 minutes.
+- **Live Readouts**: Displays live contest status, mission time remaining, total coins in the pool, and objectives captured.
 
-### 2. Pre-Contest Standby & Blur Mode
-- While in `PENDING` state, teams can register and sign in to their dashboard.
-- Challenges are locked behind an opaque frosted glass blur overlay (*"Hardware CTF Starts in a Few Minutes • Awaiting Admin Signal"*).
-- Sensitive problem briefs, flags, and technical details are redacted on the server side to prevent browser devtools inspection.
+### 2. Live Organizer Briefing System
+- Dynamic, real-time mission briefing board (`/api/briefing` and `components/BriefingPanel.tsx`).
+- Provides teams with official operational directives, lab safety guidelines, air-gap challenge instructions, and live tournament broadcast announcements.
+- Outlines tournament policies including permitted AI assistance (Claude, ChatGPT, Copilot) and Round 2 coin transfer mechanics.
 
-### 3. Team Registration with Unique Access Codes
-- Teams register with a unique team name (duplicate names are rejected with clear user feedback).
-- Each team receives a 6-character alphanumeric access code (e.g. `RW-FCB0FC`) with a 1-click copy button.
-- Teams can log back in at any time from any device using their Team Name + Unique Code.
+### 3. Objective Cards & Structured Challenge Briefs
+- **Interactive Objective Cards**: Display coin bounties, solve counts, completion status, and locked/unlocked state.
+- **Structured Challenge Modal**: Challenge briefs feature contextual tags, schematic references, hint unlock toggles, and instant flag validation.
+- **Pre-Contest Obfuscation**: While the contest is `PENDING`, objective contents and technical flags remain server-redacted to prevent browser devtools inspection.
 
-### 4. Hardware CTF Categories & Tags
-The challenge engine supports specialized hardware domains:
-- 🔌 **Microcontrollers & Firmware**
-- 📈 **Signal Analysis & Oscilloscope**
-- 🚌 **Bus Protocols (I2C / SPI / CAN / UART)**
-- 🔍 **PCB & Reverse Engineering**
-- ⚡ **Side-Channel & Fault Injection**
-- 📡 **Wireless, RF & SDR**
-- 🛰️ **IoT & Sensor Security**
-- 🔐 **Hardware Cryptography**
-- ⚙️ **General Hardware / Robotics**
+### 4. Team Registration & Identity
+- Quick registration generating a unique 6-character alphanumeric team access code (e.g. `RW-E82B14`).
+- Frictionless session resumption: log in from any device or bench station using Team Name + Access Code.
+- Auto-updating solve states and persistent coin tally.
 
-### 5. Anti-Cheat & Rate Limiting Engine
-- **Duplicate Prevention**: Once a team solves a challenge, points are awarded atomically and that challenge is locked permanently for that team.
-- **Strict Rate Limiting**: Built-in 4-second sliding window cooldown per team prevents automated brute-force scripts and spam.
-- **Dynamic Feedback**: Visual toasts and cooldown timers indicate submission progress.
+### 5. Dynamic Leaderboard & Podium Celebration
+- Live-sorting leaderboard with `framer-motion` layout animations as flags are captured.
+- Olympic-style top-3 winner podium:
+  - 🥇 **1st Place Champion** (Phosphor Gold)
+  - 🥈 **2nd Place** (Steel Silver)
+  - 🥉 **3rd Place** (Bronze)
+- Automated confetti celebration upon contest completion.
 
-### 6. Dynamic Animated Leaderboard & Top-3 Podium
-- Real-time ranking table dynamically re-orders using `framer-motion` layout animations as points are scored.
-- Upon contest conclusion, an Olympic-style podium crowns the winners:
-  - 🥇 **1st Place Champion** (Gold `#ffd81f`)
-  - 🥈 **2nd Place** (Silver `#d3ccc7`)
-  - 🥉 **3rd Place** (Bronze `#87a1bd`)
-- Confetti explosion triggers when the contest ends.
-
-### 7. Organizer Command Center (`/admin`)
-- Accessible only at `/admin` (hidden from public navigation).
-- **Credentials**:
-  - **Email**: `robotics@snuchennai.edu.in`
-  - **Password**: `password@123`
-- **Timer Command Bar**: Start CTF (30 min or custom duration), Pause, Resume, +5 Min Extend, End Early, and Reset.
-- **Hardware Challenge Management**: Add, edit, or delete challenges with point presets (`50` to `500`), technical hints, and secret flags.
-- **Live Submissions Monitor**: Auto-refreshing feed of all team flag submissions with timestamps.
-- **Registered Teams Overview**: Directory of all registered teams and access codes.
+### 6. Organizer Command Center (`/admin`)
+- Direct administrative control over contest state:
+  - **Start Contest** (default 45 min or custom duration)
+  - **Pause / Resume** clock
+  - **+5 Minutes Overtime** extension
+  - **End CTF** with locked submissions
+  - **Reset Contest** with optional score wipe checkbox
+- **Destructive Action Confirmations**: Accessible Radix UI confirmation modals protect against accidental contest termination or score wipes.
+- **Challenge CRUD**: Create, edit, preview, and delete hardware challenges and flags.
+- **Live Submission Audit Log**: Real-time stream of all flag attempts (valid & rejected) with team names and timestamps.
+- **Teams Directory**: Overview of all registered teams, access codes, and scores.
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### 1. Prerequisites
-- **Node.js**: v20.x or v24.x
-- **pnpm**: v10.x (recommended) or npm/yarn
+- **Node.js**: v20.x or v22.x+
+- **pnpm**: v9.x or v10.x (or npm / yarn)
 
-### 2. Environment Setup
-Create a `.env.local` file in the root directory:
+### 2. Environment Configuration
+Create a `.env.local` file in the project root:
 
 ```env
-DATABASE_URL="postgresql://neondb_owner:npg_PqJRKdjE9Cl7@ep-fancy-darkness-b32xs1ho-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+DATABASE_URL="postgresql://<username>:<password>@<host>/<database>?sslmode=require"
 ADMIN_EMAIL="robotics@snuchennai.edu.in"
-ADMIN_PASSWORD="password@123"
-JWT_SECRET="rewired_super_secret_jwt_key_2026_snuc_robotics_ctf"
+ADMIN_PASSWORD="your_secure_password"
+JWT_SECRET="your_jwt_secret_key_change_me_in_production"
 NEXT_PUBLIC_APP_NAME="Rewired"
 ```
 
@@ -107,19 +100,19 @@ NEXT_PUBLIC_APP_NAME="Rewired"
 pnpm install
 ```
 
-### 4. Database Setup & Initialization
-Initialize tables and the organizer account:
+### 4. Initialize Database
+Bootstrap tables, indexes, and initial organizer credentials:
 ```bash
 npx tsx -e "import { initDatabase } from './lib/init-db'; initDatabase().then(() => process.exit(0));"
 ```
 
-### 5. Run in Development Mode
+### 5. Run in Development
 ```bash
 pnpm dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) to view the CTF mission dashboard.
 
-### 6. Build and Run in Production
+### 6. Production Build
 ```bash
 pnpm build
 pnpm start -p 3000
@@ -127,9 +120,31 @@ pnpm start -p 3000
 
 ---
 
-## 🧪 Verification & Testing
+## 🧭 Page Routes & API Endpoints
 
-An end-to-end automated test suite validates the entire contest workflow (registration, codes, blur state, synchronized timer, rate-limiting, correct/wrong flags, duplicate protection, admin controls, dynamic leaderboard, and podium):
+### Frontend Routes
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/` | Public | Main mission dashboard, team registration, objective grid |
+| `/leaderboard` | Public | Real-time standings, podium rankings, coin scores |
+| `/admin` | Organizers Only | Contest clock management, challenge editor, submissions log |
+
+### API Endpoints
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/contest` | `GET`, `POST` | Fetch contest state or trigger admin contest actions |
+| `/api/briefing` | `GET` | Fetch real-time briefing notices and contest rules |
+| `/api/questions` | `GET`, `POST`, `PUT`, `DELETE` | Retrieve or manage challenge objectives |
+| `/api/submit` | `POST` | Validate flag submissions with rate limiting |
+| `/api/leaderboard` | `GET` | Fetch rank calculations and solved metrics |
+| `/api/auth/team/*` | `POST`, `GET` | Team registration, authentication, session verification |
+| `/api/auth/admin/*` | `POST`, `GET` | Organizer authentication and session verification |
+
+---
+
+## 🧪 Automated Testing
+
+Run the end-to-end test suite to verify registration, rate limiting, flag validation, clock synchronization, and leaderboard mechanics:
 
 ```bash
 npx tsx scripts/test-e2e.ts
@@ -137,16 +152,6 @@ npx tsx scripts/test-e2e.ts
 
 ---
 
-## 🧭 Page Routes
-
-| Route | Access | Description |
-| :--- | :--- | :--- |
-| `/` | Public | Main Hardware CTF dashboard, team registration, challenges grid |
-| `/leaderboard` | Public | Dynamic animated rankings and top-3 podium celebration |
-| `/admin` | Organizers Only | Admin command center for timer controls and challenge CRUD |
-
----
-
 ## 👥 SNUC Potential Robotics Club
 
-Built with precision for the **SNUC Potential Robotics Club** hardware capture-the-flag competitions.
+Crafted with high precision for the **SNUC Potential Robotics Club** hardware security competitions.
