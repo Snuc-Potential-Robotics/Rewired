@@ -69,32 +69,37 @@ export async function GET() {
       });
     }
 
-    // Contest is RUNNING or ENDED
-    const qRes = await query(`
-      SELECT 
-        q.id,
-        q.title,
-        q.category,
-        q.points,
-        q.description,
-        q.hint,
-        q.order_index,
-        COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count
-      FROM questions q
-      LEFT JOIN submissions s ON q.id = s.question_id
-      WHERE q.is_active = TRUE
-      GROUP BY q.id
-      ORDER BY q.order_index ASC, q.id ASC
-    `);
+    // Contest is RUNNING or ENDED: Fetch active questions and team solves in parallel
+    const [qRes, solvedRes] = await Promise.all([
+      query(`
+        SELECT 
+          q.id,
+          q.title,
+          q.category,
+          q.points,
+          q.description,
+          q.hint,
+          q.order_index,
+          COALESCE(sc.solves_count, 0) as solves_count
+        FROM questions q
+        LEFT JOIN (
+          SELECT question_id, COUNT(*) as solves_count
+          FROM submissions
+          WHERE is_correct = TRUE
+          GROUP BY question_id
+        ) sc ON q.id = sc.question_id
+        WHERE q.is_active = TRUE
+        ORDER BY q.order_index ASC, q.id ASC
+      `),
+      team
+        ? query<{ question_id: number }>(
+            "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
+            [team.teamId]
+          )
+        : Promise.resolve({ rows: [] }),
+    ]);
 
-    let solvedSet = new Set<number>();
-    if (team) {
-      const solvedRes = await query(
-        "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
-        [team.teamId]
-      );
-      solvedSet = new Set(solvedRes.rows.map((r) => r.question_id));
-    }
+    const solvedSet = new Set<number>(solvedRes.rows.map((r) => r.question_id));
 
     const sanitizedQuestions = qRes.rows.map((q) => ({
       ...q,

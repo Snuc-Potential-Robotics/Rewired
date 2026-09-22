@@ -85,6 +85,7 @@ export async function initDatabase() {
         is_active BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE INDEX IF NOT EXISTS idx_questions_active_order ON questions(is_active, order_index, id);
     `);
 
     // 5. Submissions table
@@ -101,6 +102,10 @@ export async function initDatabase() {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_team_question_correct 
       ON submissions (team_id, question_id) 
       WHERE is_correct = TRUE;
+      CREATE INDEX IF NOT EXISTS idx_submissions_question_correct 
+      ON submissions (question_id) 
+      WHERE is_correct = TRUE;
+      CREATE INDEX IF NOT EXISTS idx_submissions_team_id ON submissions(team_id);
       CREATE INDEX IF NOT EXISTS idx_submissions_created_at ON submissions(created_at DESC);
     `);
 

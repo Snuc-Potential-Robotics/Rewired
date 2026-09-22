@@ -15,19 +15,21 @@ export async function GET() {
       return NextResponse.json({ authenticated: false });
     }
 
-    const res = await query(
-      "SELECT id, name, code, score, last_submission_at, created_at FROM teams WHERE id = $1",
-      [session.teamId]
-    );
+    const [res, solvedRes] = await Promise.all([
+      query(
+        "SELECT id, name, code, score, last_submission_at, created_at FROM teams WHERE id = $1",
+        [session.teamId]
+      ),
+      query(
+        "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
+        [session.teamId]
+      ),
+    ]);
 
     if (res.rows.length === 0) {
       return NextResponse.json({ authenticated: false });
     }
 
-    const solvedRes = await query(
-      "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
-      [session.teamId]
-    );
     const solvedIds = solvedRes.rows.map((r) => r.question_id);
 
     return NextResponse.json({

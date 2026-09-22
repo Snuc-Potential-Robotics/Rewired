@@ -3,13 +3,33 @@ import { query } from "@/lib/db";
 
 export async function GET() {
   try {
-    // 1. Fetch contest status
-    const contestRes = await query("SELECT * FROM contest_state WHERE id = 1");
-    const contest = contestRes.rows[0];
+    // Execute contest state, ranked teams, and active questions count in parallel
+    const [contestRes, teamsRes, questionsRes] = await Promise.all([
+      query("SELECT status, duration_seconds, end_time FROM contest_state WHERE id = 1"),
+      query(`
+        SELECT 
+          t.id,
+          t.name,
+          t.score,
+          t.last_submission_at,
+          t.created_at,
+          COALESCE(s.solves_count, 0) as solves_count
+        FROM teams t
+        LEFT JOIN (
+          SELECT team_id, COUNT(*) as solves_count
+          FROM submissions
+          WHERE is_correct = TRUE
+          GROUP BY team_id
+        ) s ON t.id = s.team_id
+        ORDER BY t.score DESC, t.last_submission_at ASC NULLS LAST, t.id ASC
+      `),
+      query("SELECT COUNT(*) FROM questions WHERE is_active = TRUE"),
+    ]);
 
+    const contest = contestRes.rows[0];
     const now = new Date();
     let status = contest?.status || "PENDING";
-    let timeRemainingSeconds = contest?.duration_seconds || 1800;
+    let timeRemainingSeconds = contest?.duration_seconds || 2700;
 
     if (status === "RUNNING") {
       if (contest?.end_time) {
@@ -27,21 +47,6 @@ export async function GET() {
       timeRemainingSeconds = 0;
     }
 
-    // 2. Fetch teams with solved challenge counts
-    const teamsRes = await query(`
-      SELECT 
-        t.id,
-        t.name,
-        t.score,
-        t.last_submission_at,
-        t.created_at,
-        COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count
-      FROM teams t
-      LEFT JOIN submissions s ON t.id = s.team_id
-      GROUP BY t.id
-      ORDER BY t.score DESC, t.last_submission_at ASC NULLS LAST, t.id ASC
-    `);
-
     const rankedTeams = teamsRes.rows.map((t, idx) => ({
       rank: idx + 1,
       id: t.id,
@@ -52,20 +57,16 @@ export async function GET() {
       createdAt: t.created_at,
     }));
 
-    // 3. Aggregate stats
     const totalTeams = rankedTeams.length;
     const totalSolves = rankedTeams.reduce((sum, t) => sum + t.solvesCount, 0);
-
-    const questionsRes = await query("SELECT COUNT(*) FROM questions WHERE is_active = TRUE");
     const totalChallenges = Number(questionsRes.rows[0]?.count || 0);
 
-    // Top three teams
     const topThree = rankedTeams.slice(0, 3);
 
     return NextResponse.json({
       status,
       timeRemainingSeconds,
-      durationSeconds: contest?.duration_seconds || 1800,
+      durationSeconds: contest?.duration_seconds || 2700,
       teams: rankedTeams,
       topThree,
       stats: {
