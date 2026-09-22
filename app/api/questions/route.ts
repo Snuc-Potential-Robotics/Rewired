@@ -1,0 +1,240 @@
+import { NextResponse, NextRequest } from "next/server";
+import { query } from "@/lib/db";
+import { getAdminSession, getTeamSession } from "@/lib/auth";
+
+export async function GET() {
+  try {
+    const admin = await getAdminSession();
+    const team = await getTeamSession();
+
+    // Check contest state
+    const contestRes = await query("SELECT status FROM contest_state WHERE id = 1");
+    const contestStatus = contestRes.rows[0]?.status || "PENDING";
+
+    if (admin) {
+      // Admin sees everything, including real flags and solve statistics
+      const qRes = await query(`
+        SELECT 
+          q.id,
+          q.title,
+          q.category,
+          q.points,
+          q.description,
+          q.flag,
+          q.hint,
+          q.order_index,
+          q.is_active,
+          q.created_at,
+          COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count,
+          COUNT(s.id) as total_attempts
+        FROM questions q
+        LEFT JOIN submissions s ON q.id = s.question_id
+        GROUP BY q.id
+        ORDER BY q.order_index ASC, q.id ASC
+      `);
+
+      return NextResponse.json({
+        questions: qRes.rows,
+        isAdmin: true,
+      });
+    }
+
+    // Non-admin contestant view
+    if (contestStatus === "PENDING") {
+      // Contest has not started yet!
+      // Return teaser metadata with redacted text to prevent DevTools cheating
+      const qRes = await query(`
+        SELECT id, category, points, order_index
+        FROM questions
+        WHERE is_active = TRUE
+        ORDER BY order_index ASC, id ASC
+      `);
+
+      const blurredTeasers = qRes.rows.map((q, idx) => ({
+        id: q.id,
+        title: `Challenge #${idx + 1} [LOCKED]`,
+        category: q.category,
+        points: q.points,
+        description: "Challenge payload encrypted. Decryption key will be dispatched upon event launch.",
+        hint: null,
+        order_index: q.order_index,
+        isSolved: false,
+        isLocked: true,
+      }));
+
+      return NextResponse.json({
+        questions: blurredTeasers,
+        contestStatus,
+        isLocked: true,
+      });
+    }
+
+    // Contest is RUNNING or ENDED
+    const qRes = await query(`
+      SELECT 
+        q.id,
+        q.title,
+        q.category,
+        q.points,
+        q.description,
+        q.hint,
+        q.order_index,
+        COUNT(CASE WHEN s.is_correct = TRUE THEN 1 END) as solves_count
+      FROM questions q
+      LEFT JOIN submissions s ON q.id = s.question_id
+      WHERE q.is_active = TRUE
+      GROUP BY q.id
+      ORDER BY q.order_index ASC, q.id ASC
+    `);
+
+    let solvedSet = new Set<number>();
+    if (team) {
+      const solvedRes = await query(
+        "SELECT question_id FROM submissions WHERE team_id = $1 AND is_correct = TRUE",
+        [team.teamId]
+      );
+      solvedSet = new Set(solvedRes.rows.map((r) => r.question_id));
+    }
+
+    const sanitizedQuestions = qRes.rows.map((q) => ({
+      ...q,
+      isSolved: solvedSet.has(q.id),
+      isLocked: false,
+    }));
+
+    return NextResponse.json({
+      questions: sanitizedQuestions,
+      contestStatus,
+      isLocked: false,
+    });
+  } catch (error) {
+    console.error("Questions fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch challenges." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const admin = await getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { title, category, points, description, flag, hint, order_index } = body;
+
+    if (!title || !category || !points || !description || !flag) {
+      return NextResponse.json(
+        { error: "Please provide title, category, points, description, and flag." },
+        { status: 400 }
+      );
+    }
+
+    const res = await query(
+      `INSERT INTO questions (title, category, points, description, flag, hint, order_index, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+       RETURNING *`,
+      [
+        title.trim(),
+        category.trim(),
+        Number(points),
+        description.trim(),
+        flag.trim(),
+        hint ? hint.trim() : null,
+        order_index ? Number(order_index) : 0,
+      ]
+    );
+
+    return NextResponse.json({
+      success: true,
+      message: "Challenge added successfully!",
+      question: res.rows[0],
+    });
+  } catch (error) {
+    console.error("Create question error:", error);
+    return NextResponse.json({ error: "Failed to create challenge." }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const admin = await getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { id, title, category, points, description, flag, hint, order_index, is_active } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
+    }
+
+    const res = await query(
+      `UPDATE questions
+       SET title = COALESCE($1, title),
+           category = COALESCE($2, category),
+           points = COALESCE($3, points),
+           description = COALESCE($4, description),
+           flag = COALESCE($5, flag),
+           hint = COALESCE($6, hint),
+           order_index = COALESCE($7, order_index),
+           is_active = COALESCE($8, is_active)
+       WHERE id = $9
+       RETURNING *`,
+      [
+        title?.trim(),
+        category?.trim(),
+        points !== undefined ? Number(points) : null,
+        description?.trim(),
+        flag?.trim(),
+        hint !== undefined ? (hint ? hint.trim() : null) : null,
+        order_index !== undefined ? Number(order_index) : null,
+        is_active !== undefined ? Boolean(is_active) : null,
+        Number(id),
+      ]
+    );
+
+    if (res.rows.length === 0) {
+      return NextResponse.json({ error: "Challenge not found." }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Challenge updated successfully!",
+      question: res.rows[0],
+    });
+  } catch (error) {
+    console.error("Update question error:", error);
+    return NextResponse.json({ error: "Failed to update challenge." }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const admin = await getAdminSession();
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized. Admin privileges required." }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing challenge ID." }, { status: 400 });
+    }
+
+    await query("DELETE FROM questions WHERE id = $1", [Number(id)]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Challenge deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Delete question error:", error);
+    return NextResponse.json({ error: "Failed to delete challenge." }, { status: 500 });
+  }
+}

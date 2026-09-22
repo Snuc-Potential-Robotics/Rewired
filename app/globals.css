@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f8f8f8;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1f1f1f;
+  --popover: #ffffff;
+  --popover-foreground: #1f1f1f;
+  --primary: #ffd81f;
+  --primary-foreground: #1a1a1a;
+  --secondary: #f2f2f2;
+  --secondary-foreground: #1a1a1a;
+  --muted: #ebebeb;
+  --muted-foreground: #595959;
+  --accent: #fef3c6;
+  --accent-foreground: #1a1a1a;
+  --destructive: #c0392b;
+  --destructive-foreground: #ffffff;
+  --border: #dedede;
+  --input: #dedede;
+  --ring: #ffd81f;
+  --chart-1: #ffd81f;
+  --chart-2: #44576b;
+  --chart-3: #1f7265;
+  --chart-4: #d3ccc7;
+  --chart-5: #6a839d;
+  --sidebar: #f8f8f8;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #ffd81f;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #fff8d9;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #dedede;
+  --sidebar-ring: #ffd81f;
+  --font-sans: Inter, sans-serif;
+  --font-serif: Inter, serif;
+  --font-mono: Inter, ui-sans-serif, sans-serif, system-ui;
+  --radius: 1.4rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 12px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.01;
+  --shadow-color: #000000;
+  --shadow-2xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.01);
+  --shadow-xs: 0px 2px 12px 0px hsl(0 0% 0% / 0.01);
+  --shadow-sm: 0px 2px 12px 0px hsl(0 0% 0% / 0.01), 0px 1px 2px -1px hsl(0 0% 0% / 0.01);
+  --shadow: 0px 2px 12px 0px hsl(0 0% 0% / 0.01), 0px 1px 2px -1px hsl(0 0% 0% / 0.01);
+  --shadow-md: 0px 2px 12px 0px hsl(0 0% 0% / 0.01), 0px 2px 4px -1px hsl(0 0% 0% / 0.01);
+  --shadow-lg: 0px 2px 12px 0px hsl(0 0% 0% / 0.01), 0px 4px 6px -1px hsl(0 0% 0% / 0.01);
+  --shadow-xl: 0px 2px 12px 0px hsl(0 0% 0% / 0.01), 0px 8px 10px -1px hsl(0 0% 0% / 0.01);
+  --shadow-2xl: 0px 2px 12px 0px hsl(0 0% 0% / 0.03);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: #090909;
+  --foreground: #fbfaf7;
+  --card: #121212;
+  --card-foreground: #fbfaf7;
+  --popover: #121212;
+  --popover-foreground: #fbfaf7;
+  --primary: #ffd81f;
+  --primary-foreground: #090909;
+  --secondary: #1b1b1b;
+  --secondary-foreground: #fafafa;
+  --muted: #1b1b1b;
+  --muted-foreground: #999999;
+  --accent: #1b1b1b;
+  --accent-foreground: #fafafa;
+  --destructive: #c0392b;
+  --destructive-foreground: #ffffff;
+  --border: #222222;
+  --input: #222222;
+  --ring: #ffd81f;
+  --chart-1: #ffd81f;
+  --chart-2: #647d97;
+  --chart-3: #429082;
+  --chart-4: #d3ccc7;
+  --chart-5: #87a1bd;
+  --sidebar: #090909;
+  --sidebar-foreground: #cecece;
+  --sidebar-primary: #ffd81f;
+  --sidebar-primary-foreground: #090909;
+  --sidebar-accent: #161616;
+  --sidebar-accent-foreground: #ffd81f;
+  --sidebar-border: #222222;
+  --sidebar-ring: #ffd81f;
+  --font-sans: Inter, sans-serif;
+  --font-serif: Inter, serif;
+  --font-mono: Inter, ui-sans-serif, sans-serif, system-ui;
+  --radius: 1.4rem;
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 16px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.01;
+  --shadow-color: #000000;
+  --shadow-2xs: 0px 4px 16px 0px hsl(0 0% 0% / 0.01);
+  --shadow-xs: 0px 4px 16px 0px hsl(0 0% 0% / 0.01);
+  --shadow-sm: 0px 4px 16px 0px hsl(0 0% 0% / 0.01), 0px 1px 2px -1px hsl(0 0% 0% / 0.01);
+  --shadow: 0px 4px 16px 0px hsl(0 0% 0% / 0.01), 0px 1px 2px -1px hsl(0 0% 0% / 0.01);
+  --shadow-md: 0px 4px 16px 0px hsl(0 0% 0% / 0.01), 0px 2px 4px -1px hsl(0 0% 0% / 0.01);
+  --shadow-lg: 0px 4px 16px 0px hsl(0 0% 0% / 0.01), 0px 4px 6px -1px hsl(0 0% 0% / 0.01);
+  --shadow-xl: 0px 4px 16px 0px hsl(0 0% 0% / 0.01), 0px 8px 10px -1px hsl(0 0% 0% / 0.01);
+  --shadow-2xl: 0px 4px 16px 0px hsl(0 0% 0% / 0.03);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom cyber-industrial utility animations */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
