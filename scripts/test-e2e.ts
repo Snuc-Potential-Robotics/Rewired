@@ -232,7 +232,9 @@ async function runTests() {
   const correctData = await correctRes.json();
   assert.strictEqual(correctData.isCorrect, true);
   assert.strictEqual(correctData.pointsAwarded, testQuestion.points);
-  console.log("Correct flag awarded points:", correctData.newScore, "COINS");
+  assert.strictEqual(correctData.solveRank, 1, "First solver should be rank 1");
+  assert.strictEqual(correctData.isFirstBlood, true, "First solver should be first blood");
+  console.log("Correct flag awarded points:", correctData.newScore, "COINS (First Blood 100%)");
 
   // Attempt duplicate solve
   console.log("Waiting 4.2s for cooldown before duplicate solve test...");
@@ -248,6 +250,39 @@ async function runTests() {
   });
   assert.strictEqual(dupSolveRes.status, 400, "Duplicate solve should return 400");
   console.log("Duplicate solve strictly blocked.");
+
+  // 8b. Dynamic Scoring Verification: Second team solves the same question
+  console.log("\n[TEST 8b] Verifying dynamic Kahoot-style solve decay on second team...");
+  const regBetaRes = await fetch(`${BASE}/api/auth/team/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: `Test Team Beta ${Date.now()}` }),
+  });
+  assert.strictEqual(regBetaRes.status, 200);
+  const betaCookie = regBetaRes.headers.get("set-cookie") || "";
+
+  console.log("Submitting flag as second team...");
+  const betaSubmitRes = await fetch(`${BASE}/api/submit`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: betaCookie,
+    },
+    body: JSON.stringify({ questionId: testQuestion.id, flag: testQuestion.flag }),
+  });
+  assert.strictEqual(betaSubmitRes.status, 200);
+  const betaData = await betaSubmitRes.json();
+  assert.strictEqual(betaData.isCorrect, true);
+  assert.strictEqual(betaData.solveRank, 2, "Second solver rank should be 2");
+  assert(
+    betaData.pointsAwarded < testQuestion.points,
+    `Second solver should get decayed points (${betaData.pointsAwarded} < ${testQuestion.points})`
+  );
+  assert(
+    betaData.pointsAwarded >= Math.round(testQuestion.points * 0.90),
+    `Second solver should get at least 90% of base points (${betaData.pointsAwarded} >= ${Math.round(testQuestion.points * 0.90)})`
+  );
+  console.log(`Verified dynamic decay: 1st solve got ${correctData.pointsAwarded} coins, 2nd solve got ${betaData.pointsAwarded} coins!`);
 
   // 9. Admin Question CRUD
   console.log("\n[TEST 9] Admin Question CRUD verification...");

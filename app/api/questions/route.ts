@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { query } from "@/lib/db";
 import { getAdminSession, getTeamSession } from "@/lib/auth";
+import { calculateDynamicPoints } from "@/lib/scoring";
 
 export async function GET() {
   try {
@@ -8,8 +9,13 @@ export async function GET() {
     const team = await getTeamSession();
 
     // Check contest state
-    const contestRes = await query("SELECT status FROM contest_state WHERE id = 1");
-    const contestStatus = contestRes.rows[0]?.status || "PENDING";
+    const contestRes = await query("SELECT status, duration_seconds, end_time FROM contest_state WHERE id = 1");
+    const contestRow = contestRes.rows[0];
+    const contestStatus = contestRow?.status || "PENDING";
+    const nowMs = Date.now();
+    const endMs = contestRow?.end_time ? new Date(contestRow.end_time).getTime() : nowMs;
+    const timeRemainingSeconds = Math.max(0, Math.floor((endMs - nowMs) / 1000));
+    const totalDurationSeconds = contestRow?.duration_seconds || 2700;
 
     if (admin) {
       // Admin sees everything, including real flags and solve statistics
@@ -55,6 +61,8 @@ export async function GET() {
         title: `Challenge #${idx + 1} [LOCKED]`,
         category: q.category,
         points: q.points,
+        current_points: q.points,
+        isFirstBloodAvailable: true,
         description: "Challenge payload encrypted. Decryption key will be dispatched upon event launch.",
         hint: null,
         order_index: q.order_index,
@@ -101,11 +109,25 @@ export async function GET() {
 
     const solvedSet = new Set<number>(solvedRes.rows.map((r) => r.question_id));
 
-    const sanitizedQuestions = qRes.rows.map((q) => ({
-      ...q,
-      isSolved: solvedSet.has(q.id),
-      isLocked: false,
-    }));
+    const sanitizedQuestions = qRes.rows.map((q) => {
+      const solvesCount = Number(q.solves_count || 0);
+      const nextSolveRank = solvesCount + 1;
+      const dynamic = calculateDynamicPoints(
+        q.points,
+        nextSolveRank,
+        timeRemainingSeconds,
+        totalDurationSeconds
+      );
+
+      return {
+        ...q,
+        solves_count: solvesCount,
+        current_points: dynamic.awardedPoints,
+        isFirstBloodAvailable: nextSolveRank === 1,
+        isSolved: solvedSet.has(q.id),
+        isLocked: false,
+      };
+    });
 
     return NextResponse.json({
       questions: sanitizedQuestions,
