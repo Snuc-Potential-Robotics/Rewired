@@ -22,7 +22,7 @@ Coins captured during Round 1 serve as the team's official hardware auction budg
 
 ## 🛠️ Architecture & Tech Stack
 
-- **Framework**: Next.js 16 (App Router with Turbopack) & React 19
+- **Framework**: Next.js 16 (App Router with Turbopack) & React 19.
 - **Language**: TypeScript 5.9 (Strict Type Safety)
 - **Styling**: Tailwind CSS v4 with custom industrial hardware design tokens (copper, phosphor amber `#ffd81f`, verification emerald, breach crimson)
 - **Typography**: Space Grotesk (mechanical display headers), Inter (body prose), JetBrains Mono (monospaced telemetry, clock, access codes)
