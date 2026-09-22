@@ -33,6 +33,10 @@ export const metadata: Metadata = {
   title: "Rewired 2026 — Hardware CTF",
   description:
     "A 45-minute hardware capture-the-flag run by the SNUC Potential Robotics Club. Sniff the air, clone the card, take the key.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
