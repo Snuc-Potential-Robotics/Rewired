@@ -1,288 +1,259 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, ShieldCheck, UserPlus, KeyRound, Copy, Check, ArrowRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { ArrowRight, Check, Copy, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { useToast } from "./Toast";
+
+interface Team {
+  id: number;
+  name: string;
+  code: string;
+  score: number;
+}
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (team: { id: number; name: string; code: string; score: number }) => void;
+  onSuccess: (team: Team) => void;
   initialMode?: "register" | "login";
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess, initialMode = "register" }: AuthModalProps) {
+export function AuthModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialMode = "register",
+}: AuthModalProps) {
   const { toast } = useToast();
   const [mode, setMode] = useState<"register" | "login">(initialMode);
-  const [teamName, setTeamName] = useState("");
-  const [teamCode, setTeamCode] = useState("");
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<Team | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Success state showing generated code
-  const [registeredTeam, setRegisteredTeam] = useState<{
-    id: number;
-    name: string;
-    code: string;
-    score: number;
-  } | null>(null);
-  const [copiedCode, setCopiedCode] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    const endpoint =
+      mode === "register" ? "/api/auth/team/register" : "/api/auth/team/login";
+    const body = mode === "register" ? { name } : { name, code };
+
     try {
-      const res = await fetch("/api/auth/team/register", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: teamName }),
+        body: JSON.stringify(body),
       });
-
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error || "Failed to register team.");
+        setError(
+          data.error ||
+            (mode === "register"
+              ? "That team could not be registered."
+              : "That name and code do not match a team.")
+        );
         return;
       }
 
-      setRegisteredTeam(data.team);
-      toast("Team successfully registered!", "success");
-    } catch {
-      setError("An unexpected error occurred. Please check connection.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/auth/team/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: teamName, code: teamCode }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Login failed.");
-        return;
+      if (mode === "register") {
+        setRegistered(data.team);
+        toast("Team registered.", "success");
+      } else {
+        toast(`Signed in as ${data.team.name}.`, "success");
+        onSuccess(data.team);
+        onClose();
       }
-
-      toast(`Welcome back, Team ${data.team.name}!`, "success");
-      onSuccess(data.team);
-      onClose();
     } catch {
-      setError("Failed to sign in. Please try again.");
+      setError("The request did not reach the server. Check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
   const copyCode = () => {
-    if (!registeredTeam) return;
-    navigator.clipboard.writeText(registeredTeam.code);
-    setCopiedCode(true);
-    toast("Access code copied!", "info");
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const finishRegistration = () => {
-    if (registeredTeam) {
-      onSuccess(registeredTeam);
-      onClose();
-    }
+    if (!registered) return;
+    navigator.clipboard.writeText(registered.code);
+    setCopied(true);
+    toast("Access code copied.", "success");
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Team access"
+    >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden text-foreground"
+        initial={{ opacity: 0, y: 12, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="panel w-full max-w-md overflow-hidden shadow-lift"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border bg-secondary/30">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold tracking-tight">Team Access Portal</h2>
-              <p className="text-xs text-muted-foreground">SNUC Rewired CTF 2026</p>
-            </div>
+        <header className="flex items-center justify-between border-b border-edge bg-rail/40 px-5 py-3.5">
+          <div>
+            <div className="silkscreen">Team access</div>
+            <h2 className="mt-1.5 font-display text-[15px] font-semibold tracking-tight text-foreground">
+              {registered ? "You are in" : mode === "register" ? "Register a team" : "Sign in"}
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="Close"
+            className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-rail hover:text-foreground"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
-        </div>
+        </header>
 
-        {/* If successfully registered, show the Access Code Reveal Card */}
-        {registeredTeam ? (
-          <div className="p-6 space-y-5">
-            <div className="text-center space-y-1">
-              <div className="inline-flex p-2 rounded-full bg-emerald-500/10 text-emerald-400 mb-1 border border-emerald-500/20">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-lg text-foreground">Team Registered!</h3>
-              <p className="text-xs text-muted-foreground">
-                Your team <span className="font-semibold text-primary">{registeredTeam.name}</span> has been created.
-              </p>
-            </div>
+        {registered ? (
+          <div className="space-y-5 p-6">
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
+              <span className="font-display font-semibold text-foreground">
+                {registered.name}
+              </span>{" "}
+              is on the board. This code is how every teammate signs in — write it down
+              before you close this.
+            </p>
 
-            {/* Generated Code Display */}
-            <div className="p-4 rounded-xl bg-secondary/80 border border-border space-y-2 text-center">
-              <div className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
-                Your Unique Access Code
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="font-mono text-2xl font-bold tracking-widest text-primary">
-                  {registeredTeam.code}
+            <div className="rounded-md border border-copper/35 bg-copper/[0.06] px-5 py-5 text-center">
+              <div className="silkscreen mb-3">Your access code</div>
+              <div className="flex items-center justify-center gap-3">
+                <span className="font-mono text-[28px] font-bold tracking-[0.12em] text-copper">
+                  {registered.code}
                 </span>
                 <button
-                  type="button"
                   onClick={copyCode}
-                  className="p-2 rounded-lg bg-background border border-border hover:bg-secondary text-foreground transition-colors"
-                  title="Copy code"
+                  aria-label="Copy access code"
+                  className="rounded-md border border-edge bg-board p-2 text-foreground transition-colors hover:border-copper/60"
                 >
-                  {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copied ? (
+                    <Check className="h-4 w-4 text-verified" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
                 </button>
               </div>
-              <p className="text-[11px] text-muted-foreground">
-                Save this code! You can use it to log in from other devices or share with teammates.
-              </p>
             </div>
 
             <button
-              onClick={finishRegistration}
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm py-3 rounded-xl transition-all shadow-md"
+              onClick={() => {
+                onSuccess(registered);
+                onClose();
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-signal py-3 font-display text-[13px] font-semibold text-ink transition-colors hover:bg-signal/85"
             >
-              Enter Contest Dashboard
-              <ArrowRight className="w-4 h-4" />
+              Go to the objectives
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         ) : (
           <div className="p-6">
-            {/* Tabs */}
-            <div className="flex rounded-xl bg-secondary/60 p-1 mb-5 border border-border">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("register");
-                  setError(null);
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                  mode === "register"
-                    ? "bg-card text-foreground shadow-sm border border-border"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <UserPlus className="w-3.5 h-3.5" />
-                Register New Team
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  setError(null);
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-lg transition-all ${
-                  mode === "login"
-                    ? "bg-card text-foreground shadow-sm border border-border"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                Enter with Code
-              </button>
+            <div className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-edge bg-edge">
+              {(["register", "login"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => {
+                    setMode(m);
+                    setError(null);
+                  }}
+                  className={`py-2.5 font-display text-[12px] font-semibold transition-colors ${
+                    mode === m
+                      ? "bg-rail text-signal"
+                      : "bg-board text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m === "register" ? "New team" : "Have a code"}
+                </button>
+              ))}
             </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs leading-relaxed">
+              <p className="mb-4 rounded-md border border-breach/30 bg-breach/[0.07] px-3.5 py-2.5 text-[13px] leading-relaxed text-breach">
                 {error}
-              </div>
+              </p>
             )}
 
-            {mode === "register" ? (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1.5">
-                    Team Name <span className="text-primary">*</span>
-                  </label>
+            <form onSubmit={submit} className="space-y-4">
+              <Field label="Team name">
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder={mode === "register" ? "Pick something memorable" : "Your team name"}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-md border border-edge bg-ink px-3.5 py-2.5 text-[14px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-signal focus:outline-none"
+                />
+              </Field>
+
+              {mode === "login" && (
+                <Field label="Access code">
                   <input
                     type="text"
                     required
-                    placeholder="e.g. CyberRobots, ByteBenders"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-secondary/50 border border-border text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
+                    spellCheck={false}
+                    autoComplete="off"
+                    placeholder="RW-A8F29C"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    className="w-full rounded-md border border-edge bg-ink px-3.5 py-2.5 font-mono text-[14px] uppercase tracking-[0.1em] text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-signal focus:outline-none"
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    No duplicate names. You will receive an exclusive access code upon registration.
-                  </p>
-                </div>
+                </Field>
+              )}
 
-                <button
-                  type="submit"
-                  disabled={loading || !teamName.trim()}
-                  className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-semibold text-sm py-2.5 rounded-xl transition-all shadow-sm"
-                >
-                  {loading ? "Registering Team..." : "Create Team & Generate Code"}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1.5">
-                    Team Name <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Your registered team name"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-secondary/50 border border-border text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-                  />
-                </div>
+              {mode === "register" && (
+                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                  Names are unique. You get an access code on the next screen — it signs the
+                  whole team in, on any device.
+                </p>
+              )}
 
-                <div>
-                  <label className="block text-xs font-medium text-foreground mb-1.5">
-                    Unique Access Code <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. RW-A8F29C"
-                    value={teamCode}
-                    onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
-                    className="w-full font-mono uppercase tracking-wider px-3.5 py-2.5 rounded-xl bg-secondary/50 border border-border text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || !teamName.trim() || !teamCode.trim()}
-                  className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground font-semibold text-sm py-2.5 rounded-xl transition-all shadow-sm"
-                >
-                  {loading ? "Verifying..." : "Sign In to Team"}
-                </button>
-              </form>
-            )}
+              <button
+                type="submit"
+                disabled={loading || !name.trim() || (mode === "login" && !code.trim())}
+                className="w-full rounded-md bg-signal py-3 font-display text-[13px] font-semibold text-ink transition-colors hover:bg-signal/85 disabled:cursor-not-allowed disabled:bg-rail disabled:text-muted-foreground"
+              >
+                {loading
+                  ? mode === "register"
+                    ? "Registering"
+                    : "Checking"
+                  : mode === "register"
+                    ? "Register and get a code"
+                    : "Sign in"}
+              </button>
+            </form>
           </div>
         )}
       </motion.div>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="silkscreen mb-2 block">{label}</span>
+      {children}
+    </label>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { CheckCircle2, AlertTriangle, XCircle, Info, X } from "lucide-react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { AlertTriangle, Check, Info, X, XCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 export type ToastType = "success" | "error" | "warning" | "info";
@@ -23,6 +23,29 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const TONES: Record<ToastType, { border: string; accent: string; icon: React.ReactNode }> = {
+  success: {
+    border: "border-verified/35",
+    accent: "bg-verified",
+    icon: <Check className="h-4 w-4 text-verified" />,
+  },
+  error: {
+    border: "border-breach/35",
+    accent: "bg-breach",
+    icon: <XCircle className="h-4 w-4 text-breach" />,
+  },
+  warning: {
+    border: "border-copper/40",
+    accent: "bg-copper",
+    icon: <AlertTriangle className="h-4 w-4 text-copper" />,
+  },
+  info: {
+    border: "border-edge-strong",
+    accent: "bg-signal",
+    icon: <Info className="h-4 w-4 text-signal" />,
+  },
+};
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -32,64 +55,72 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const addToast = useCallback(
     (message: string, type: ToastType = "info", title?: string) => {
-      const id = Math.random().toString(36).substring(2, 9);
-      setToasts((prev) => [...prev.slice(-4), { id, type, title, message }]);
-
-      setTimeout(() => {
-        removeToast(id);
-      }, 5000);
+      const id = Math.random().toString(36).slice(2, 9);
+      setToasts((prev) => [...prev.slice(-3), { id, type, title, message }]);
+      setTimeout(() => removeToast(id), 5000);
     },
     [removeToast]
   );
 
-  const value: ToastContextType = {
-    toast: addToast,
-    success: (msg, title) => addToast(msg, "success", title),
-    error: (msg, title) => addToast(msg, "error", title),
-    warning: (msg, title) => addToast(msg, "warning", title),
-    info: (msg, title) => addToast(msg, "info", title),
-  };
+  const value = useMemo<ToastContextType>(
+    () => ({
+      toast: addToast,
+      success: (m, t) => addToast(m, "success", t),
+      error: (m, t) => addToast(m, "error", t),
+      warning: (m, t) => addToast(m, "warning", t),
+      info: (m, t) => addToast(m, "info", t),
+    }),
+    [addToast]
+  );
 
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0">
-        <AnimatePresence>
-          {toasts.map((t) => (
-            <motion.div
-              key={t.id}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-              className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-md transition-all ${
-                t.type === "success"
-                  ? "bg-[#142319]/90 border-emerald-500/40 text-emerald-200"
-                  : t.type === "error"
-                  ? "bg-[#251214]/90 border-red-500/40 text-red-200"
-                  : t.type === "warning"
-                  ? "bg-[#27200e]/90 border-yellow-500/40 text-yellow-200"
-                  : "bg-card/95 border-border text-foreground"
-              }`}
-            >
-              <div className="mt-0.5 shrink-0">
-                {t.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
-                {t.type === "error" && <XCircle className="w-5 h-5 text-red-400" />}
-                {t.type === "warning" && <AlertTriangle className="w-5 h-5 text-yellow-400" />}
-                {t.type === "info" && <Info className="w-5 h-5 text-primary" />}
-              </div>
-              <div className="flex-1 text-sm">
-                {t.title && <div className="font-semibold text-foreground">{t.title}</div>}
-                <div className="text-foreground/90 leading-snug">{t.message}</div>
-              </div>
-              <button
-                onClick={() => removeToast(t.id)}
-                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors p-1"
-                aria-label="Close toast"
+
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed bottom-5 right-5 z-[60] flex w-full max-w-sm flex-col gap-2 px-4 sm:px-0"
+      >
+        <AnimatePresence initial={false}>
+          {toasts.map((t) => {
+            const tone = TONES[t.type];
+            return (
+              <motion.div
+                key={t.id}
+                layout
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24, transition: { duration: 0.12 } }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className={`pointer-events-auto relative flex items-start gap-3 overflow-hidden rounded-md border ${tone.border} bg-board/95 py-3.5 pl-4 pr-3 shadow-lift backdrop-blur-md`}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ))}
+                {/* Status bar down the leading edge, the way a rack unit
+                    signals which channel lit up. */}
+                <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${tone.accent}`} />
+
+                <span className="mt-px shrink-0">{tone.icon}</span>
+
+                <div className="flex-1">
+                  {t.title && (
+                    <div className="font-display text-[13px] font-semibold text-foreground">
+                      {t.title}
+                    </div>
+                  )}
+                  <div className="text-[13px] leading-snug text-muted-foreground">
+                    {t.message}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => removeToast(t.id)}
+                  aria-label="Dismiss"
+                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
     </ToastContext.Provider>
