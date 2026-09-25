@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Lightbulb, Lock, Send, X } from "lucide-react";
+import { Check, Lock, Send, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "./Toast";
 import { BriefBody } from "./BriefBody";
+import { formatINR } from "@/lib/utils";
 
 export interface QuestionItem {
   id: number;
@@ -18,6 +19,7 @@ export interface QuestionItem {
   order_index: number;
   isSolved?: boolean;
   isLocked?: boolean;
+  awarded_points?: number;
   solves_count?: number | string;
 }
 
@@ -41,7 +43,6 @@ export function ChallengeModal({
   const { toast } = useToast();
   const [flag, setFlag] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [showHint, setShowHint] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -143,10 +144,10 @@ export function ChallengeModal({
                   solved ? "text-verified" : "text-signal"
                 }`}
               >
-                {question.current_points ?? question.points} coins
+                {formatINR(question.current_points ?? question.points)} reward
                 {question.current_points && question.current_points !== question.points && (
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                    (Base: {question.points})
+                    (Base: {formatINR(question.points)})
                   </span>
                 )}
               </span>
@@ -179,41 +180,15 @@ export function ChallengeModal({
         {/* Body */}
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
           <section>
-            <div className="silkscreen mb-2.5">Brief</div>
+            {question.description.includes("[STORY]") && (
+              <div className="silkscreen mb-2.5">Brief</div>
+            )}
             <BriefBody description={question.description} />
           </section>
 
-          {question.hint && (
-            <section className="overflow-hidden rounded-md border border-edge">
-              <button
-                type="button"
-                onClick={() => setShowHint((v) => !v)}
-                aria-expanded={showHint}
-                className="flex w-full items-center justify-between gap-3 bg-rail/50 px-4 py-3 text-left transition-colors hover:bg-rail"
-              >
-                <span className="flex items-center gap-2.5">
-                  <Lightbulb className="h-3.5 w-3.5 text-signal" />
-                  <span className="font-display text-[13px] font-semibold text-foreground">
-                    Technical hint
-                  </span>
-                </span>
-                <ChevronDown
-                  className={`h-4 w-4 text-muted-foreground transition-transform ${
-                    showHint ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-              {showHint && (
-                <p className="border-t border-edge bg-ink/40 px-4 py-3.5 font-mono text-[12px] leading-relaxed text-foreground/85">
-                  {question.hint}
-                </p>
-              )}
-            </section>
-          )}
-
           {solved ? (
-            <Banner tone="verified" title={`${question.points} coins banked`}>
-              Your team already captured this flag. The coins are locked into your round 2
+            <Banner tone="verified" title={`${formatINR(question.awarded_points ?? question.points)} reward banked`}>
+              Your team already captured this flag. The reward is locked into your round 2
               balance and this objective is closed.
             </Banner>
           ) : contestStatus === "ENDED" ? (

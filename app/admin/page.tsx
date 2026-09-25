@@ -35,6 +35,7 @@ import { useToast } from "@/components/Toast";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import Link from "next/link";
 import type { OrganizerGuideData } from "@/app/api/admin/guide/route";
+import { formatINR } from "@/lib/utils";
 
 interface AdminContestState {
   status: string;
@@ -671,7 +672,7 @@ export default function AdminPage() {
               <div>
                 <h3 className="text-base font-bold font-mono text-foreground">Challenge Management</h3>
                 <p className="text-xs text-muted-foreground">
-                  Manage challenges, flags, and coin rewards. Coins earned by teams are used as bidding currency in Round 2.
+                  Manage challenges, flags, and monetary rewards. Rewards earned by teams are used as bidding currency in Round 2.
                 </p>
               </div>
               <button
@@ -690,7 +691,7 @@ export default function AdminPage() {
                     <tr className="border-b border-border bg-secondary/40 text-muted-foreground font-mono uppercase tracking-wider text-[11px]">
                       <th className="py-3 px-4 w-12 text-center">#</th>
                       <th className="py-3 px-4">Challenge Title</th>
-                      <th className="py-3 px-4">Coins Reward</th>
+                      <th className="py-3 px-4">Base Reward</th>
                       <th className="py-3 px-4">Secret Flag / Answer</th>
                       <th className="py-3 px-4 text-center">Solves / Attempts</th>
                       <th className="py-3 px-4 text-center">Status</th>
@@ -707,7 +708,7 @@ export default function AdminPage() {
                           <div className="font-bold text-foreground text-sm">{q.title}</div>
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-primary">
-                          {q.points} COINS
+                          {formatINR(q.points)}
                         </td>
                         <td className="py-3.5 px-4 font-mono text-primary bg-secondary/20 rounded px-2">
                           <code className="text-[11px] select-all">{q.flag}</code>
@@ -849,7 +850,7 @@ export default function AdminPage() {
                             PHASE {p.phase} DEBRIEF
                           </span>
                           <span className="text-xs font-mono font-bold text-primary">
-                            {p.points} COINS
+                            {formatINR(p.points)}
                           </span>
                         </div>
                         <h4 className="font-bold text-sm text-foreground font-mono">
@@ -997,7 +998,7 @@ export default function AdminPage() {
                           )}
                         </td>
                         <td className="py-3 px-4 text-right font-bold text-primary">
-                          {s.is_correct ? `+${s.points_awarded} COINS` : "0"}
+                          {s.is_correct ? `+${formatINR(s.points_awarded)}` : "0"}
                         </td>
                       </tr>
                     ))}
@@ -1022,7 +1023,7 @@ export default function AdminPage() {
             <div>
               <h3 className="text-base font-bold font-mono text-foreground">Registered Teams Overview</h3>
               <p className="text-xs text-muted-foreground">
-                All teams registered with their exclusive unique access codes and accumulated Round 2 bidding coins.
+                All teams registered with their exclusive unique access codes and accumulated Round 2 bidding balance.
               </p>
             </div>
 
@@ -1035,7 +1036,7 @@ export default function AdminPage() {
                       <th className="py-3 px-4">Team Name</th>
                       <th className="py-3 px-4">Unique Access Code</th>
                       <th className="py-3 px-4 text-center">Solved Challenges</th>
-                      <th className="py-3 px-4 text-right">Coins (Round 2 Currency)</th>
+                      <th className="py-3 px-4 text-right">Balance (Round 2 Currency)</th>
                       <th className="py-3 px-4 text-right">Registration Time</th>
                     </tr>
                   </thead>
@@ -1053,7 +1054,7 @@ export default function AdminPage() {
                           <span className="text-emerald-400 font-semibold">{t.solves_count}</span>
                         </td>
                         <td className="py-3.5 px-4 text-right font-mono font-bold text-primary text-sm">
-                          {t.score} COINS
+                          {formatINR(t.score)}
                         </td>
                         <td className="py-3.5 px-4 text-right text-muted-foreground text-[11px] font-mono">
                           {new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -1107,7 +1108,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-foreground mb-1">Coins Reward *</label>
+                  <label className="block font-semibold text-foreground mb-1">Base Reward *</label>
                   <input
                     type="number"
                     required
@@ -1119,7 +1120,7 @@ export default function AdminPage() {
                   />
                   {/* Point quick presets */}
                   <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                    {[50, 100, 150, 200, 250, 300, 500].map((pt) => (
+                    {[50000, 100000, 150000, 200000, 250000, 300000, 500000].map((pt) => (
                       <button
                         key={pt}
                         type="button"

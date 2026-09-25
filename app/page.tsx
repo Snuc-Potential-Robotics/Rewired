@@ -11,6 +11,7 @@ import { ObjectiveCard } from "@/components/ObjectiveCard";
 import { useToast } from "@/components/Toast";
 import { useContest, usePoll, useTeamSession } from "@/lib/use-contest";
 import type { Briefing } from "@/lib/briefing";
+import { formatINR } from "@/lib/utils";
 
 export default function HomePage() {
   const { toast } = useToast();
@@ -85,16 +86,23 @@ export default function HomePage() {
     }
   };
 
-  const handleSolved = (questionId: number, _points: number, newScore: number) => {
+  const handleSolved = (questionId: number, points: number, newScore: number) => {
     setTeam((prev) => (prev ? { ...prev, score: newScore } : prev));
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === questionId
-          ? { ...q, isSolved: true, solves_count: Number(q.solves_count || 0) + 1 }
+          ? {
+              ...q,
+              isSolved: true,
+              awarded_points: points,
+              solves_count: Number(q.solves_count || 0) + 1,
+            }
           : q
       )
     );
-    setSelected((prev) => (prev?.id === questionId ? { ...prev, isSolved: true } : prev));
+    setSelected((prev) =>
+      prev?.id === questionId ? { ...prev, isSolved: true, awarded_points: points } : prev
+    );
   };
 
   const openAuth = (mode: "register" | "login" = "register") => {
@@ -102,7 +110,7 @@ export default function HomePage() {
     setAuthModalOpen(true);
   };
 
-  const totalCoins = questions.reduce((sum, q) => sum + Number(q.points || 0), 0);
+  const totalReward = questions.reduce((sum, q) => sum + Number(q.points || 0), 0);
   const solvedCount = questions.filter((q) => q.isSolved).length;
 
   return (
@@ -144,10 +152,10 @@ export default function HomePage() {
           {/* Instrument strip: the three numbers worth tracking. */}
           <dl className="grid w-full grid-cols-3 gap-px overflow-hidden rounded-lg border border-edge bg-edge lg:w-auto">
             <Readout label="Objectives" value={questions.length || "—"} />
-            <Readout label="Coins in play" value={totalCoins || "—"} accent />
+            <Readout label="Rewards in play" value={totalReward ? formatINR(totalReward) : "—"} accent />
             <Readout
               label="Your balance"
-              value={team ? team.score : "—"}
+              value={team ? formatINR(team.score) : "—"}
               sub={team ? `${solvedCount} captured` : "Not signed in"}
             />
           </dl>

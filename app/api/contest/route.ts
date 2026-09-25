@@ -204,7 +204,8 @@ export async function POST(req: NextRequest) {
 
         if (clearSubmissions) {
           await client.query("DELETE FROM submissions");
-          await client.query("UPDATE teams SET score = 0, last_submission_at = NULL");
+          await client.query("DELETE FROM teams");
+          await client.query("DELETE FROM rate_limits");
         }
         await client.query("COMMIT");
       } catch (e) {
@@ -217,7 +218,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: clearSubmissions
-          ? "Contest reset to PENDING and team submissions cleared."
+          ? "Contest reset to PENDING and team data cleared."
           : "Contest state reset to PENDING.",
       });
     }

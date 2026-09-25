@@ -9,61 +9,43 @@ export async function seedAirGapChallenges() {
 
   const challenges = [
     {
-      title: "Phase 1: BLE Wireless Extraction (Username Discovery)",
+      title: "Phase 1: Username Discovery",
       category: "Phase 1",
-      points: 150,
-      description: `[STORY]
-You guys have been contracted to breach a physically isolated server room. Standard attacks over this server have failed because the system is completely air-gapped. We have 45 minutes before the security changes shift.
+      points: 50000,
+      description: `You guys have been contracted to breach a physically isolated server room. Standard attacks over this server have failed because the system is completely air-gapped. We have 45 minutes before the security changes shift.
 
 Your target is a lazy systems administrator who has a habit of reusing credentials and leaving equipment lying around. We believe he dropped his company-issued wireless earphones in the lobby.
 
-[MISSION]
-Intercept and inspect the Bluetooth Low Energy (BLE) advertisements of the dropped device to recover the administrator's raw username.
-
-[ADDITIONAL INFO]
-The company is giving the same username for every product the employee gets from the company.
-
 [SUBMISSION]
-Enter the recovered username wrapped in flag format: flag{username}`,
-      flag: "flag{sysadmin_ble_airgap_user}",
-      hint: "Inspect raw BLE advertising packets. Earphones broadcast identification metadata inside custom manufacturer data and complete local name attributes.",
+Enter the recovered username wrapped in flag format: **\`flag{username}\`**`,
+      flag: "Rathimaa",
+      hint: null,
       order_index: 1,
     },
     {
-      title: "Phase 2: Physical RFID Card Emulation (Password Dump)",
+      title: "Phase 2: Password Dump",
       category: "Phase 2",
-      points: 200,
+      points: 150000,
       description: `[STORY]
-The target administrator left his physical access card on a desk outside the secure perimeter.
-
-[MISSION]
-Build an RFID reader using your team's RC522 module and ESP32 breadboard kit. Bring your scanner near the employee's physical access card to read the card memory/UID to extract the server room password. Once the username and password are known, update them in the laptop terminal provided by the organizers.
-
-[COMPONENTS REQUIRED PER TEAM]
-- 1x RC522 RFID Reader
-- 1x ESP32 Microcontroller
-- Breadboard & Jumper Wires
+The target administrator left his physical access card on a desk outside the secure perimeter. (You can ask the organisers for the additional components if you need!)
 
 [SUBMISSION]
-Enter the recovered access card password wrapped in flag format: flag{password}`,
-      flag: "flag{rfid_rc522_esp32_badge_cloned}",
-      hint: "Wire RC522 SPI bus (SDA, SCK, MOSI, MISO, RST) to ESP32. Read the UID and memory blocks from the card, then report to the organizer laptop station to authenticate.",
+Enter the recovered access card password wrapped in flag format: **\`flag{password}\`**`,
+      flag: "mudinchaullapo!!",
+      hint: null,
       order_index: 2,
     },
     {
-      title: "Phase 3: Master-Slave Protocol Intercept (System Compromise)",
+      title: "Phase 3: System Compromise",
       category: "Phase 3",
-      points: 250,
+      points: 300000,
       description: `[STORY]
 You have successfully authenticated into the server room workstation! However, full control requires the master system authentication key that coordinates all slave units.
 
-[MISSION]
-The master system transmits an authentication key to all slave units across the local air-gapped interface. Intercept this key from the live transmissions between the master and slave systems to achieve full compromise.
-
 [SUBMISSION]
-Enter the captured master authentication key wrapped in flag format: flag{auth_key}`,
-      flag: "flag{master_slave_airgap_compromised_2026}",
-      hint: "The Master node transmits heartbeats and security tokens to slave nodes. Sniff this communication channel to capture the master auth handshake.",
+Enter the captured master authentication key wrapped in flag format: **\`flag{auth_key}\`**`,
+      flag: "vazhthukalfriend",
+      hint: null,
       order_index: 3,
     },
   ];

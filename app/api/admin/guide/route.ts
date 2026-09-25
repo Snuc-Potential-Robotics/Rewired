@@ -42,37 +42,37 @@ const ORGANIZER_GUIDE: OrganizerGuideData = {
     {
       phase: 1,
       title: "Username Extraction: BLE Raw Data",
-      points: 150,
+      points: 50000,
       mechanism: "The target dropped his company-issued wireless earphones in the lobby.",
       groundTruth:
         "The username is printed in the raw BLE advertisement data of the wireless device.",
       solutionMethod:
         "Teams must use an ESP32 (BLE scanner sketch) or mobile BLE packet analyzer to inspect advertising payload packets and extract the embedded username.",
-      flag: "flag{sysadmin_ble_airgap_user}",
+      flag: "Rathimaa",
     },
     {
       phase: 2,
       title: "Password: RC522 RFID + Laptop Update",
-      points: 200,
+      points: 150000,
       mechanism: "Sysadmin left his physical RFID access badge on the desk outside the perimeter.",
       groundTruth:
         "The team must read the physical access card using an RC522 RFID reader and an ESP32.",
       solutionMethod:
         "Read UID and sector memory with RC522 module, extract password, and verify against the organizers' laptop station.",
-      flag: "flag{rfid_rc522_esp32_badge_cloned}",
+      flag: "mudinchaullapo!!",
       organizerAction:
         "After obtaining credentials from the RFID card, teams must report to the organizers' laptop to verify and update access.",
     },
     {
       phase: 3,
       title: "Master-Slave Authentication Key Intercept",
-      points: 250,
+      points: 300000,
       mechanism: "Server room system is air-gapped from traditional Ethernet/WAN.",
       groundTruth:
         "The authentication key is transmitted wirelessly from the master system node to slave units.",
       solutionMethod:
         "Teams must intercept/sniff the key transmission between the master ESP32 and slave node to compromise the full system.",
-      flag: "flag{master_slave_airgap_compromised_2026}",
+      flag: "vazhthukalfriend",
     },
   ],
   hintSchedule: [

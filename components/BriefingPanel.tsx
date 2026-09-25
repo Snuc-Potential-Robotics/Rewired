@@ -62,7 +62,7 @@ export function BriefingPanel({ briefing, sealed, loading }: BriefingPanelProps)
         ) : sealed || !briefing ? (
           <SealedBriefing />
         ) : (
-          <div className="grid grid-cols-1 divide-y divide-edge lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-edge">
             {briefing.panels.map((panel) => (
               <article key={panel.designator} className="space-y-3 p-5">
                 <h3 className="flex items-center gap-2.5">
