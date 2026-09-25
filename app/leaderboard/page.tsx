@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { Navbar } from "@/components/Navbar";
 import { AuthModal } from "@/components/AuthModal";
 import { useContest, usePoll, useTeamSession } from "@/lib/use-contest";
+import { formatINR } from "@/lib/utils";
 
 interface RankedTeam {
   rank: number;
@@ -165,9 +166,9 @@ export default function LeaderboardPage() {
                     className="font-mono text-[34px] font-bold leading-none"
                     style={{ color: i === 0 ? "var(--signal)" : "var(--foreground)" }}
                   >
-                    {t.score}
+                    {formatINR(t.score)}
                   </span>
-                  <span className="silkscreen">coins</span>
+                  <span className="silkscreen">reward</span>
                 </div>
               </motion.div>
             ))}
@@ -201,7 +202,7 @@ export default function LeaderboardPage() {
                   <Th>Team</Th>
                   <Th className="text-center">Flags</Th>
                   <Th className="text-center">Last capture</Th>
-                  <Th className="text-right">Coins</Th>
+                  <Th className="text-right">Reward</Th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +261,7 @@ export default function LeaderboardPage() {
 
                         <td className="px-4 py-3.5 text-right">
                           <span className="font-mono text-[16px] font-bold text-signal">
-                            {t.score}
+                            {formatINR(t.score)}
                           </span>
                         </td>
                       </motion.tr>

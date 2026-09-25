@@ -5,6 +5,7 @@ import { Check, ChevronDown, Lightbulb, Lock, Send, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "./Toast";
 import { BriefBody } from "./BriefBody";
+import { formatINR } from "@/lib/utils";
 
 export interface QuestionItem {
   id: number;
@@ -18,6 +19,7 @@ export interface QuestionItem {
   order_index: number;
   isSolved?: boolean;
   isLocked?: boolean;
+  awarded_points?: number;
   solves_count?: number | string;
 }
 
@@ -143,10 +145,10 @@ export function ChallengeModal({
                   solved ? "text-verified" : "text-signal"
                 }`}
               >
-                {question.current_points ?? question.points} coins
+                {formatINR(question.current_points ?? question.points)} reward
                 {question.current_points && question.current_points !== question.points && (
                   <span className="ml-1 text-[10px] font-normal text-muted-foreground">
-                    (Base: {question.points})
+                    (Base: {formatINR(question.points)})
                   </span>
                 )}
               </span>
@@ -212,8 +214,8 @@ export function ChallengeModal({
           )}
 
           {solved ? (
-            <Banner tone="verified" title={`${question.points} coins banked`}>
-              Your team already captured this flag. The coins are locked into your round 2
+            <Banner tone="verified" title={`${formatINR(question.awarded_points ?? question.points)} reward banked`}>
+              Your team already captured this flag. The reward is locked into your round 2
               balance and this objective is closed.
             </Banner>
           ) : contestStatus === "ENDED" ? (

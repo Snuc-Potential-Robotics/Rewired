@@ -80,9 +80,9 @@ async function runTests() {
       body: JSON.stringify({
         title: "Phase 1: BLE Wireless Extraction (Username Discovery)",
         category: "Phase 1",
-        points: 150,
+        points: 50000,
         description: "Recover administrator username from raw BLE advertisements.",
-        flag: "flag{sysadmin_ble_airgap_user}",
+        flag: "Rathimaa",
         hint: "Inspect raw BLE advertising packets.",
         order_index: 1,
       }),

@@ -8,6 +8,7 @@ import { Check, Copy, LogOut, Menu, X } from "lucide-react";
 import { useToast } from "./Toast";
 import { ClockReadout, FuseTrace } from "./MissionClock";
 import { ContestStatus, TeamState, formatClock } from "@/lib/use-contest";
+import { formatINR } from "@/lib/utils";
 
 interface NavbarProps {
   team?: TeamState | null;
@@ -108,7 +109,7 @@ export function Navbar({
                   {team.name}
                 </span>
                 <span className="mt-1 block font-mono text-[11px] font-semibold text-signal">
-                  {team.score} <span className="text-muted-foreground">coins</span>
+                  {formatINR(team.score)}
                 </span>
               </span>
 
@@ -195,7 +196,7 @@ export function Navbar({
                   {team.name}
                 </span>
                 <span className="mt-1 block font-mono text-xs font-semibold text-signal">
-                  {team.score} <span className="text-muted-foreground">coins</span>
+                  {formatINR(team.score)}
                 </span>
               </span>
               <span className="flex items-center gap-2">

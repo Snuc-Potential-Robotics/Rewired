@@ -3,6 +3,7 @@
 import React from "react";
 import { ArrowRight, Check, Lock } from "lucide-react";
 import type { QuestionItem } from "./ChallengeModal";
+import { formatINR } from "@/lib/utils";
 
 interface ObjectiveCardProps {
   question: QuestionItem;
@@ -29,7 +30,7 @@ export function ObjectiveCard({ question, index, locked, onOpen }: ObjectiveCard
       type="button"
       onClick={onOpen}
       disabled={locked}
-      aria-label={`${question.title}, ${question.points} coins`}
+      aria-label={`${question.title}, ${formatINR(question.current_points ?? question.points)} reward`}
       className={`panel group relative flex w-full flex-col overflow-hidden text-left transition-all duration-200 ${
         locked
           ? "cursor-not-allowed"
@@ -58,8 +59,7 @@ export function ObjectiveCard({ question, index, locked, onOpen }: ObjectiveCard
             solved ? "text-verified" : "text-signal"
           }`}
         >
-          {question.current_points ?? question.points}
-          <span className="ml-1 text-[10px] font-medium text-muted-foreground">coins</span>
+          {formatINR(question.current_points ?? question.points)}
         </span>
       </div>
 
