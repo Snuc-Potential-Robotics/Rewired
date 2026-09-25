@@ -42,18 +42,36 @@ function parseBrief(description: string): BriefSection[] {
 
 /** Flags and code-ish tokens get monospaced so they stand out from prose. */
 function highlightTokens(text: string): React.ReactNode[] {
-  return text.split(/(flag\{[^}]*\})/g).map((part, i) =>
-    /^flag\{[^}]*\}$/.test(part) ? (
-      <code
-        key={i}
-        className="rounded-sm border border-signal/30 bg-signal/10 px-1.5 py-0.5 font-mono text-[13px] font-semibold text-signal"
-      >
-        {part}
-      </code>
-    ) : (
-      <React.Fragment key={i}>{part}</React.Fragment>
-    )
-  );
+  return text.split(/(\*\*[^*]+\*\*|flag\{[^}]*\})/g).map((part, i) => {
+    const boldMatch = part.match(/^\*\*(.+)\*\*$/);
+    if (boldMatch) {
+      const codeMatch = boldMatch[1].match(/^`([^`]+)`$/);
+      return (
+        <strong key={i} className="font-semibold text-foreground">
+          {codeMatch ? (
+            <code className="rounded-sm border border-signal/30 bg-signal/10 px-1.5 py-0.5 font-mono text-[13px] font-semibold text-signal">
+              {codeMatch[1]}
+            </code>
+          ) : (
+            boldMatch[1]
+          )}
+        </strong>
+      );
+    }
+
+    if (/^flag\{[^}]*\}$/.test(part)) {
+      return (
+        <code
+          key={i}
+          className="rounded-sm border border-signal/30 bg-signal/10 px-1.5 py-0.5 font-mono text-[13px] font-semibold text-signal"
+        >
+          {part}
+        </code>
+      );
+    }
+
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
 }
 
 /**

@@ -12,13 +12,12 @@ export async function seedAirGapChallenges() {
       title: "Phase 1: Username Discovery",
       category: "Phase 1",
       points: 50000,
-      description: `[STORY]
-You guys have been contracted to breach a physically isolated server room. Standard attacks over this server have failed because the system is completely air-gapped. We have 45 minutes before the security changes shift.
+      description: `You guys have been contracted to breach a physically isolated server room. Standard attacks over this server have failed because the system is completely air-gapped. We have 45 minutes before the security changes shift.
 
 Your target is a lazy systems administrator who has a habit of reusing credentials and leaving equipment lying around. We believe he dropped his company-issued wireless earphones in the lobby.
 
 [SUBMISSION]
-Enter the recovered username wrapped in flag format: flag{username}`,
+Enter the recovered username wrapped in flag format: **\`flag{username}\`**`,
       flag: "Rathimaa",
       hint: null,
       order_index: 1,
@@ -28,10 +27,10 @@ Enter the recovered username wrapped in flag format: flag{username}`,
       category: "Phase 2",
       points: 150000,
       description: `[STORY]
-    The target administrator left his physical access card on a desk outside the secure perimeter. (You can ask the organisers for the additional components if you need!)
+The target administrator left his physical access card on a desk outside the secure perimeter. (You can ask the organisers for the additional components if you need!)
 
 [SUBMISSION]
-Enter the recovered access card password wrapped in flag format: flag{password}`,
+Enter the recovered access card password wrapped in flag format: **\`flag{password}\`**`,
       flag: "mudinchaullapo!!",
       hint: null,
       order_index: 2,
@@ -44,7 +43,7 @@ Enter the recovered access card password wrapped in flag format: flag{password}`
 You have successfully authenticated into the server room workstation! However, full control requires the master system authentication key that coordinates all slave units.
 
 [SUBMISSION]
-Enter the captured master authentication key wrapped in flag format: flag{auth_key}`,
+Enter the captured master authentication key wrapped in flag format: **\`flag{auth_key}\`**`,
       flag: "vazhthukalfriend",
       hint: null,
       order_index: 3,

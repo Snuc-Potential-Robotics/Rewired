@@ -78,7 +78,7 @@ async function runTests() {
         Cookie: adminCookie,
       },
       body: JSON.stringify({
-        title: "Phase 1: BLE Wireless Extraction (Username Discovery)",
+        title: "Phase 1: Username Discovery",
         category: "Phase 1",
         points: 50000,
         description: "Recover administrator username from raw BLE advertisements.",
